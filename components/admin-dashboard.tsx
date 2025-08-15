@@ -94,7 +94,6 @@ export function AdminDashboard() {
         <TabsList>
           <TabsTrigger value="reports">All Reports</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="sheet">User Sheet</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reports" className="space-y-4">
@@ -105,9 +104,7 @@ export function AdminDashboard() {
           <UserManagement />
         </TabsContent>
 
-        <TabsContent value="sheet" className="space-y-4">
-          <UserManagement />
-        </TabsContent>
+
       </Tabs>
     </div>
   )

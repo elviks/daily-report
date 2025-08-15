@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Search, Mail, Building, Calendar, Phone, Trash2 } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Search, Trash2 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { AddTeamMember } from "@/components/add-team-member"
+import { useRouter } from "next/navigation"
 
 interface UserInterface {
   id: string
@@ -29,13 +30,10 @@ export function UserManagement() {
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null)
-  const [userReports, setUserReports] = useState<any[]>([])
-  const [loadingReports, setLoadingReports] = useState(false)
-  const [showUserDetails, setShowUserDetails] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<UserInterface | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     fetchUsers()
@@ -70,26 +68,8 @@ export function UserManagement() {
     setFilteredUsers(filtered)
   }
 
-  const fetchUserDetails = async (user: UserInterface) => {
-    setSelectedUser(user)
-    setLoadingReports(true)
-    setShowUserDetails(true)
-
-    try {
-      const response = await fetch(`/api/admin/reports/user/${user.id}`)
-      const data = await response.json()
-
-      if (response.ok) {
-        setUserReports(Array.isArray(data.reports) ? data.reports : [])
-      } else {
-        setUserReports([])
-      }
-    } catch (error) {
-      console.error("Error fetching user reports:", error)
-      setUserReports([])
-    } finally {
-      setLoadingReports(false)
-    }
+  const handleUserClick = (user: UserInterface) => {
+    router.push(`/admin/user/${user.id}`)
   }
 
   const handleDeleteClick = (e: React.MouseEvent, user: UserInterface) => {
@@ -112,12 +92,6 @@ export function UserManagement() {
         setUsers(prev => prev.filter(u => u.id !== userToDelete.id))
         setDeleteDialogOpen(false)
         setUserToDelete(null)
-
-        // Close user details if it was the deleted user
-        if (selectedUser?.id === userToDelete.id) {
-          setShowUserDetails(false)
-          setSelectedUser(null)
-        }
       } else {
         const error = await response.json()
         console.error('Failed to delete user:', error)
@@ -127,14 +101,6 @@ export function UserManagement() {
     } finally {
       setDeleting(false)
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
   }
 
   if (loading) {
@@ -151,10 +117,15 @@ export function UserManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>
-            Click on any member to view their details and reports ({filteredUsers.length} members)
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Team Members</CardTitle>
+              <CardDescription>
+                Click on any member to view their calendar and details ({filteredUsers.length} members)
+              </CardDescription>
+            </div>
+            <AddTeamMember onUserAdded={fetchUsers} />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search */}
@@ -175,7 +146,7 @@ export function UserManagement() {
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => fetchUserDetails(user)}
+                  onClick={() => handleUserClick(user)}
                 >
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 flex-shrink-0">
@@ -219,111 +190,6 @@ export function UserManagement() {
           </ScrollArea>
         </CardContent>
       </Card>
-
-      {/* User Details Modal */}
-      <Dialog open={showUserDetails} onOpenChange={setShowUserDetails}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage
-                  src={selectedUser?.profileImage}
-                  alt={selectedUser?.name}
-                  className="object-cover"
-                />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                  {selectedUser?.name?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {selectedUser?.name}
-            </DialogTitle>
-            <DialogDescription>Member details and daily reports</DialogDescription>
-          </DialogHeader>
-
-          {selectedUser && (
-            <div className="space-y-6">
-              {/* User Details Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{selectedUser.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{selectedUser.department}</span>
-                  </div>
-                  {selectedUser.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{selectedUser.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Joined {formatDate(selectedUser.createdAt)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Reports Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Daily Reports ({(userReports && userReports.length) ? userReports.length : 0})</CardTitle>
-                  {selectedUser.lastReportDate && (
-                    <CardDescription>
-                      Last report submitted on {formatDate(selectedUser.lastReportDate)}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {loadingReports ? (
-                    <div className="text-center py-8">Loading reports...</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {(userReports && userReports.length === 0) ? (
-                        <div className="text-center text-muted-foreground py-8">No reports submitted yet</div>
-                      ) : (
-                        <ScrollArea className="h-[400px]">
-                          <div className="space-y-4 pr-4">
-                            {userReports.map((report) => (
-                              <div key={report.id} className="border rounded-lg p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 text-sm font-medium">
-                                    <Calendar className="h-4 w-4" />
-                                    {formatDate(report.date)}
-                                  </div>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {report.createdAt !== report.updatedAt ? "Updated" : "Submitted"}
-                                  </Badge>
-                                </div>
-
-                                <div className="text-sm leading-relaxed">
-                                  <p>{report.content}</p>
-                                </div>
-
-                                <div className="text-xs text-muted-foreground space-y-1">
-                                  <div>Submitted: {new Date(report.createdAt).toLocaleString()}</div>
-                                  {report.createdAt !== report.updatedAt && (
-                                    <div>Last Updated: {new Date(report.updatedAt).toLocaleString()}</div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

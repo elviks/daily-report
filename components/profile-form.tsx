@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { User, Mail, Phone, Building, Lock, Camera, Upload } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ChangePassword } from "@/components/change-password"
 
 interface UserProfile {
   id: string
@@ -378,6 +379,9 @@ export function ProfileForm() {
             </CardFooter>
           </form>
         </Card>
+
+        {/* Password Change Section */}
+        <ChangePassword userId={profile.id} />
       </div>
     </div>
   )

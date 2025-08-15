@@ -9,6 +9,8 @@ export interface User {
      phone: string;
      profileImage?: string;
      createdAt: string;
+     lastLogin?: string;
+     isActive?: boolean;
 }
 
 export interface Report {
@@ -24,28 +26,6 @@ export interface Report {
 export const users: User[] = [
      {
           id: "1",
-          name: "Elvik Sharma",
-          email: "elvik@fishtailinfosolutions.com",
-          password: "password123",
-          role: "user",
-          department: "Development",
-          phone: "+1234567890",
-          profileImage: "",
-          createdAt: "2024-01-01T00:00:00Z",
-     },
-     {
-          id: "2",
-          name: "Aashish Gupta",
-          email: "aashish@fishtailinfosolutions.com",
-          password: "aashish123",
-          role: "user",
-          department: "Development",
-          phone: "+1234567891",
-          profileImage: "",
-          createdAt: "2024-01-01T00:00:00Z",
-     },
-     {
-          id: "3",
           name: "Rajan Rauniyar",
           email: "rajan@admin.com",
           password: "rajan123",
@@ -56,7 +36,7 @@ export const users: User[] = [
           createdAt: "2024-01-01T00:00:00Z",
      },
      {
-          id: "4",
+          id: "2",
           name: "Rahul Rauniyar",
           email: "rahul@admin.com",
           password: "rahul123",
@@ -66,17 +46,7 @@ export const users: User[] = [
           profileImage: "",
           createdAt: "2024-01-01T00:00:00Z",
      },
-     {
-          id: "5",
-          name: "Tilasmi Subedi",
-          email: "tilasmi@fishtailinfosolutions.com",
-          password: "tilasmi123",
-          role: "user",
-          department: "Content",
-          phone: "+1234567891",
-          profileImage: "",
-          createdAt: "2024-01-01T00:00:00Z",
-     },
+
 ];
 
 // Mock reports database
@@ -87,6 +57,56 @@ export const reports: Report[] = [
 // Helper functions
 export function getUserById(id: string): User | undefined {
      return users.find((user) => user.id === id);
+}
+
+export function getUserByEmail(email: string): User | undefined {
+     return users.find((user) => user.email === email);
+}
+
+// Generate unique ID for new users
+export function generateUniqueId(): string {
+     const existingIds = users.map(user => parseInt(user.id)).sort((a, b) => a - b);
+     let newId = 1;
+
+     for (const id of existingIds) {
+          if (id === newId) {
+               newId++;
+          } else {
+               break;
+          }
+     }
+
+     return newId.toString();
+}
+
+// Add new user to mock data
+export function addUser(user: Omit<User, 'id'>): User {
+     const newUser: User = {
+          ...user,
+          id: generateUniqueId(),
+     };
+     users.push(newUser);
+     return newUser;
+}
+
+// Remove user from mock data by ID
+export function removeUserById(id: string): boolean {
+     const index = users.findIndex(user => user.id === id);
+     if (index !== -1) {
+          users.splice(index, 1);
+          return true;
+     }
+     return false;
+}
+
+// Remove user from mock data by email
+export function removeUserByEmail(email: string): boolean {
+     const index = users.findIndex(user => user.email === email);
+     if (index !== -1) {
+          users.splice(index, 1);
+          return true;
+     }
+     return false;
 }
 
 export function getReportsByUserId(
