@@ -36,14 +36,27 @@ export function RecentReports() {
   const fetchReports = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}")
+      console.log("Fetching reports for user:", user.id, "User object:", user)
+
+      if (!user.id) {
+        console.error("No user ID found in localStorage")
+        setReports([])
+        return
+      }
+
       const response = await fetch(`/api/reports/user/${user.id}`)
       const data = await response.json()
 
       if (response.ok) {
+        console.log("Reports fetched successfully:", data.reports)
         setReports(data.reports)
+      } else {
+        console.error("Failed to fetch reports:", data)
+        setReports([])
       }
     } catch (error) {
       console.error("Error fetching reports:", error)
+      setReports([])
     } finally {
       setLoading(false)
     }

@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { headers } from "next/headers";
 
-export async function GET() {
+export async function GET(request: Request) {
+     // CRITICAL: Check if user is admin
+     const headersList = headers();
+     const userRole = headersList.get("x-user-role");
+
+     if (userRole !== "superadmin") {
+          return NextResponse.json(
+               { error: "Access denied - admin only" },
+               { status: 403 }
+          );
+     }
      try {
           const client = await clientPromise;
           if (!client) {
@@ -36,7 +47,7 @@ export async function GET() {
                     { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
                     {
                          $project: {
-                              id: "$__id",
+                              id: "$_id",
                               _id: 0,
                               userId: 1,
                               date: 1,

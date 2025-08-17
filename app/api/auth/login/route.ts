@@ -28,8 +28,10 @@ export async function POST(request: NextRequest) {
                          const dbUser = await usersCol.findOne({ email });
 
                          if (dbUser) {
+                              // Ensure consistent ID format - prefer string ID if available, otherwise use ObjectId
+                              const userId = dbUser.id || dbUser._id?.toString();
                               user = {
-                                   id: dbUser.id || dbUser._id?.toString(),
+                                   id: userId,
                                    name: dbUser.name,
                                    email: dbUser.email,
                                    password: dbUser.password,

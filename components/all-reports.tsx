@@ -44,6 +44,7 @@ export function AllReports() {
           Report[]
      >([]);
      const [loading, setLoading] = useState(true);
+     const [error, setError] = useState<string | null>(null);
      const [searchTerm, setSearchTerm] = useState("");
      const [dateFilter, setDateFilter] = useState("");
      const [departmentFilter, setDepartmentFilter] =
@@ -67,8 +68,26 @@ export function AllReports() {
 
      const fetchReports = async () => {
           try {
+               // Get user info from localStorage to check role
+               const userData = localStorage.getItem("user");
+               if (!userData) {
+                    setError("User not authenticated");
+                    return;
+               }
+
+               const user = JSON.parse(userData);
+               if (user.role !== "superadmin") {
+                    setError("Access denied - admin only");
+                    return;
+               }
+
                const response = await fetch(
-                    "/api/admin/reports"
+                    "/api/admin/reports",
+                    {
+                         headers: {
+                              "x-user-role": user.role
+                         }
+                    }
                );
                const data = await response.json();
 
@@ -85,34 +104,7 @@ export function AllReports() {
                     ] as string[];
                     setDepartments(uniqueDepartments);
                } else {
-                    // Fallback to mock data if API fails
-                    console.warn("API failed, using mock data");
-                    const mockReports = [
-                         {
-                              id: "1",
-                              userId: "1",
-                              userName: "John Doe",
-                              userEmail: "john@company.com",
-                              department: "Engineering",
-                              date: "2024-01-10",
-                              content: "Worked on the authentication system and fixed several bugs in the login flow. Also reviewed pull requests from team members.",
-                              createdAt: "2024-01-10T09:00:00Z",
-                              updatedAt: "2024-01-10T09:00:00Z",
-                         },
-                         {
-                              id: "2",
-                              userId: "2",
-                              userName: "Jane Smith",
-                              userEmail: "jane@company.com",
-                              department: "Marketing",
-                              date: "2024-01-10",
-                              content: "Completed the marketing campaign analysis and prepared presentation for stakeholders. Met with design team to discuss new brand guidelines.",
-                              createdAt: "2024-01-10T10:30:00Z",
-                              updatedAt: "2024-01-10T10:30:00Z",
-                         },
-                    ];
-                    setReports(mockReports);
-                    setDepartments(["Engineering", "Marketing"]);
+                    setError(data.error || "Failed to fetch reports");
                }
           } catch (error) {
                console.error(
@@ -235,6 +227,19 @@ export function AllReports() {
                     <CardContent className="p-6">
                          <div className="text-center text-muted-foreground">
                               Loading reports...
+                         </div>
+                    </CardContent>
+               </Card>
+          );
+     }
+
+     if (error) {
+          return (
+               <Card>
+                    <CardContent className="p-6">
+                         <div className="text-center text-red-600">
+                              <p className="font-medium">Error Loading Reports</p>
+                              <p className="text-sm mt-1">{error}</p>
                          </div>
                     </CardContent>
                </Card>

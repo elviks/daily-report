@@ -11,10 +11,11 @@ import {
      DropdownMenuSeparator,
      DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, LogOut, User, Settings, Bell } from "lucide-react";
+import { FileText, LogOut, User, Settings } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NotificationPanel } from "@/components/notification-panel";
+import { useNotifications } from "@/hooks/use-notifications";
 
 interface DashboardLayoutProps {
      children: React.ReactNode;
@@ -24,48 +25,8 @@ export function DashboardLayout({
      children,
 }: DashboardLayoutProps) {
      const [user, setUser] = useState<any | null>(null);
-     const [notifMessages, setNotifMessages] = useState<string[]>([]);
-     const [hasAttention, setHasAttention] = useState(false);
      const router = useRouter();
-
-     const formatDate = (d: Date) => {
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          return `${year}-${month}-${day}`;
-     };
-
-     const checkNotifications = async (u: any) => {
-          try {
-               const today = new Date();
-               const yesterday = new Date(today);
-               yesterday.setDate(today.getDate() - 1);
-               const twoDaysAgo = new Date(today);
-               twoDaysAgo.setDate(today.getDate() - 2);
-
-               const yStr = formatDate(yesterday);
-               const twoStr = formatDate(twoDaysAgo);
-
-               const [resTwo, resY] = await Promise.all([
-                    fetch(`/api/reports/check?userId=${encodeURIComponent(u.id)}&date=${encodeURIComponent(twoStr)}`),
-                    fetch(`/api/reports/check?userId=${encodeURIComponent(u.id)}&date=${encodeURIComponent(yStr)}`),
-               ]);
-               const [dataTwo, dataY] = await Promise.all([resTwo.json(), resY.json()]);
-
-               const messages: string[] = [];
-               if (!dataTwo?.exists) {
-                    messages.push("A previous day's report has been converted into leave. Submit today to avoid more leaves.");
-               } else if (!dataY?.exists) {
-                    messages.push("Missed yesterday's report. If not submitted today, it will be marked as a day leave.");
-               }
-
-               setNotifMessages(messages);
-               setHasAttention(messages.length > 0);
-          } catch (_) {
-               setNotifMessages([]);
-               setHasAttention(false);
-          }
-     };
+     const { checkAndCreateNotifications } = useNotifications(user?.id || '');
 
      useEffect(() => {
           const userData = localStorage.getItem("user");
@@ -114,18 +75,18 @@ export function DashboardLayout({
 
      useEffect(() => {
           if (user) {
-               checkNotifications(user);
+               checkAndCreateNotifications();
           }
-     }, [user]);
+     }, [user, checkAndCreateNotifications]);
 
      useEffect(() => {
           const onVisible = () => {
                if (document.visibilityState === 'visible' && user) {
-                    checkNotifications(user);
+                    checkAndCreateNotifications();
                }
           };
           const onUserUpdated = () => {
-               if (user) checkNotifications(user);
+               if (user) checkAndCreateNotifications();
           };
           window.addEventListener('visibilitychange', onVisible);
           window.addEventListener('userUpdated', onUserUpdated as EventListener);
@@ -133,7 +94,7 @@ export function DashboardLayout({
                window.removeEventListener('visibilitychange', onVisible);
                window.removeEventListener('userUpdated', onUserUpdated as EventListener);
           };
-     }, [user]);
+     }, [user, checkAndCreateNotifications]);
 
      const handleLogout = () => {
           localStorage.removeItem("user");
@@ -168,35 +129,7 @@ export function DashboardLayout({
                               </div>
 
                               <div className="flex items-center gap-3">
-                                   <Popover>
-                                        <PopoverTrigger asChild>
-                                             <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 border-1 border-red-600">
-                                                  <Bell className={hasAttention ? "h-5 w-5 text-red-600 " : "h-5 w-5 text-slate-500"} />
-                                                  {hasAttention && (
-                                                       <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3 rounded-full bg-red-600">
-                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                       </span>
-                                                  )}
-                                             </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent align="end" className="w-80">
-                                             <div className="space-y-2">
-                                                  <h4 className="font-semibold">Notifications</h4>
-                                                  {notifMessages.length === 0 ? (
-                                                       <p className="text-sm text-muted-foreground">You're all caught up!</p>
-                                                  ) : (
-                                                       <ul className="space-y-2">
-                                                            {notifMessages.map((m, i) => (
-                                                                 <li key={i} className="text-sm text-red-700 font-medium bg-red-50 border border-red-200 rounded-md p-2">
-                                                                      {m}
-                                                                 </li>
-                                                            ))}
-                                                       </ul>
-                                                  )}
-
-                                             </div>
-                                        </PopoverContent>
-                                   </Popover>
+                                   <NotificationPanel userId={user.id} />
 
                                    <DropdownMenu>
                                         <DropdownMenuTrigger
@@ -272,12 +205,12 @@ export function DashboardLayout({
                                                   className="group hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
                                              >
                                                   <Link
-                                                       href="/settings"
+                                                       href="/debug"
                                                        className="flex items-center"
                                                   >
                                                        <Settings className="mr-3 h-4 w-4 text-slate-500 group-hover:text-gray-600 transition-colors" />
                                                        <span className="text-slate-700 group-hover:text-gray-600">
-                                                            Settings
+                                                            Debug
                                                        </span>
                                                   </Link>
                                              </DropdownMenuItem>

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { reports as mockReports } from "@/lib/mock-data";
 
 export async function POST(request: Request) {
      try {
@@ -62,29 +61,13 @@ export async function POST(request: Request) {
                // console.warn("DB not available, using mock fallback", dbError);
           }
 
-          // Mock fallback: upsert in memory
-          const existingIndex = mockReports.findIndex(
-               (r) => r.userId === originalUserId && r.date === normalizedDate
+          // CRITICAL: Mock data fallback disabled for security
+          // Reports must be stored in database to maintain user isolation
+          console.error("SUBMIT: Database not available - cannot store report securely");
+          return NextResponse.json(
+               { error: "Database not available - cannot store report securely" },
+               { status: 503 }
           );
-          if (existingIndex !== -1) {
-               mockReports[existingIndex] = {
-                    ...mockReports[existingIndex],
-                    content: data.content,
-                    updatedAt: new Date().toISOString(),
-               };
-               return NextResponse.json({ success: true, id: mockReports[existingIndex].id, updated: true });
-          }
-
-          const newId = String(Date.now());
-          mockReports.push({
-               id: newId,
-               userId: originalUserId,
-               date: normalizedDate,
-               content: data.content,
-               createdAt: new Date().toISOString(),
-               updatedAt: new Date().toISOString(),
-          });
-          return NextResponse.json({ success: true, id: newId, created: true });
      } catch (error) {
           console.error("Error submitting report:", error);
           return NextResponse.json(

@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Shield, LogOut } from "lucide-react"
+import { Shield, LogOut, Bell, Users, BarChart3 } from "lucide-react"
+import Link from "next/link"
 
 interface User {
   id: string
@@ -71,10 +72,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Shield className="h-8 w-8 text-red-600" />
+
               <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
             </div>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0 overflow-hidden">

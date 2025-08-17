@@ -90,9 +90,9 @@ export async function POST(request: Request) {
                          );
                     }
 
-                    // Insert new user
+                    // Insert new user with consistent ID format
                     await usersCol.insertOne({
-                         id: newUser.id,
+                         id: newUser.id, // This is the string ID from mock data
                          name,
                          email,
                          password, // In production, this should be hashed
