@@ -1,3 +1,5 @@
+import { isWorkingDay } from './utils';
+
 export interface NotificationData {
     _id?: string;
     userId: string;
@@ -22,7 +24,7 @@ export class NotificationService {
         const prevDay = new Date(date);
         prevDay.setDate(date.getDate() - 1);
 
-        // If it's Saturday, go back one more day
+        // If it's Saturday, go back one more day to Friday
         if (this.isSaturday(prevDay)) {
             prevDay.setDate(prevDay.getDate() - 1);
         }
@@ -48,6 +50,27 @@ export class NotificationService {
     }
 
     /**
+     * Calculate missing working days between two dates
+     */
+    static getMissingWorkingDays(startDate: Date, endDate: Date, existingReports: string[]): string[] {
+        const missingDays: string[] = [];
+        const currentDate = new Date(startDate);
+
+        while (currentDate <= endDate) {
+            // Only count working days
+            if (isWorkingDay(currentDate)) {
+                const dateStr = this.formatDate(currentDate);
+                if (!existingReports.includes(dateStr)) {
+                    missingDays.push(dateStr);
+                }
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return missingDays;
+    }
+
+    /**
      * Format date to YYYY-MM-DD string
      */
     static formatDate(date: Date): string {
@@ -65,8 +88,8 @@ export class NotificationService {
         const yesterday = this.getPreviousWorkingDay(today);
         const twoDaysAgo = this.getTwoWorkingDaysAgo(today);
 
-        // Skip if today is Saturday
-        if (this.isSaturday(today)) {
+        // Skip if today is not a working day
+        if (!isWorkingDay(today)) {
             return [];
         }
 
@@ -90,8 +113,8 @@ export class NotificationService {
                 });
             }
 
-            // Check yesterday (only if it's not Saturday)
-            if (!this.isSaturday(yesterday)) {
+            // Check yesterday (only if it's a working day)
+            if (isWorkingDay(yesterday)) {
                 const yesterdayStr = this.formatDate(yesterday);
                 const yesterdayResponse = await fetch(
                     `/api/reports/check?userId=${encodeURIComponent(userId)}&date=${encodeURIComponent(yesterdayStr)}`
@@ -170,6 +193,30 @@ export class NotificationService {
         } catch (error) {
             console.error('Error fetching notifications:', error);
             return [];
+        }
+    }
+
+    /**
+     * Clean up duplicate notifications for a user
+     */
+    static async cleanupDuplicates(userId: string): Promise<void> {
+        try {
+            // Add a small delay to prevent rapid successive calls
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const response = await fetch('/api/notifications/cleanup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+
+            if (!response.ok) {
+                console.warn('Failed to cleanup duplicate notifications');
+            }
+        } catch (error) {
+            console.error('Error cleaning up duplicate notifications:', error);
         }
     }
 }

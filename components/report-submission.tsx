@@ -7,7 +7,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Send, Calendar, CheckCircle, FileText } from "lucide-react"
+import { Send, Calendar, CheckCircle, FileText, Clock, Target, TrendingUp } from "lucide-react"
+import { getAllowedReportDates, isDateAllowedForReport, getAllowedDatesMessage } from "@/lib/utils"
 
 export function ReportSubmission() {
   const [date, setDate] = useState("")
@@ -16,17 +17,14 @@ export function ReportSubmission() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
 
-  // Allow reports for today and yesterday only
-  const todayStr = new Date().toISOString().split("T")[0]
-  const yesterdayDate = new Date()
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-  const yesterdayStr = yesterdayDate.toISOString().split("T")[0]
+  // Get allowed dates for report submission (considering weekends)
+  const allowedDates = getAllowedReportDates()
 
   useEffect(() => {
     // Set today's date as default and check
-    setDate(todayStr)
-    checkTodaySubmission(todayStr)
-  }, [todayStr])
+    setDate(allowedDates.today)
+    checkTodaySubmission(allowedDates.today)
+  }, [allowedDates.today])
 
   const checkTodaySubmission = async (selectedDate: string) => {
     try {
@@ -47,9 +45,9 @@ export function ReportSubmission() {
   }
 
   const handleDateChange = (newDate: string) => {
-    // Only allow today or yesterday
-    if (newDate !== todayStr && newDate !== yesterdayStr) {
-      setError("You can only submit reports for today or yesterday")
+    // Check if the selected date is allowed
+    if (!isDateAllowedForReport(newDate)) {
+      setError("You can only submit reports for allowed dates. " + getAllowedDatesMessage())
       return
     }
     setError("")
@@ -93,77 +91,115 @@ export function ReportSubmission() {
   }
 
   return (
-
-    <div className="max-w-3xl mx-auto">
-      <Card className="bg-white border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300">
+    <div className="w-full">
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center space-x-3">
+            <FileText className="w-5 h-5 text-gray-600" />
+            <div>
+              <CardTitle className="text-xl font-medium text-gray-900">
+                {submitted ? "Update Your Report" : "Submit Daily Report"}
+              </CardTitle>
+              <p className="text-gray-500 text-sm mt-1">
+                {submitted ? "Modify your existing report for today" : "Share your daily progress and achievements"}
+              </p>
+            </div>
+          </div>
+        </CardHeader>
 
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6 ">
+          <CardContent className="space-y-4">
+            {/* Info Alert */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <Calendar className="h-4 w-4 text-gray-600 mt-0.5" />
+                <div>
+                  <p className="text-gray-700 text-sm">
+                    <span className="font-medium">Submission Guidelines:</span> {getAllowedDatesMessage()}
+                  </p>
+                  <p className="text-gray-600 text-xs mt-1">
+                    Reports can be submitted and edited until the end of each allowed day.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Alert */}
             {error && (
               <Alert variant="destructive" className="bg-red-50 border-red-200">
-                <AlertDescription className="flex items-center text-red-700">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
+                <AlertDescription className="text-red-700 text-sm">
                   {error}
                 </AlertDescription>
               </Alert>
             )}
 
+            {/* Success Alert */}
             {submitted && (
-              <Alert className="bg-gray-100 border-gray-200 animate-pulse">
-                <CheckCircle className="h-4 w-4 text-gray-600" />
-                <AlertDescription className="flex items-center text-gray-700 ml-2">
-                  Report submitted successfully! You can edit it until the end of the day.
-                </AlertDescription>
-              </Alert>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <p className="text-green-700 text-sm font-medium">
+                    Report submitted successfully! You can edit it until the end of the day.
+                  </p>
+                </div>
+              </div>
             )}
 
+            {/* Date Selection */}
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-slate-700 font-medium">
-                Date
+              <Label htmlFor="date" className="text-gray-700 font-medium text-sm flex items-center space-x-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span>Report Date</span>
               </Label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="date"
                   type="date"
                   value={date}
                   onChange={(e) => handleDateChange(e.target.value)}
-                  min={yesterdayStr}
-                  max={todayStr}
                   required
-                  className="pl-10 h-12 border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
+                  className="border-gray-300 focus:border-gray-400 focus:ring-gray-400"
                 />
               </div>
-              <p className="text-sm text-slate-500">You can submit reports for today or yesterday</p>
             </div>
 
+            {/* Content Input */}
             <div className="space-y-2">
-              <Label htmlFor="content" className="text-slate-700 font-medium">
-                What did you work on today?
+              <Label htmlFor="content" className="text-gray-700 font-medium text-sm flex items-center space-x-2">
+                <Target className="w-4 h-4 text-gray-500" />
+                <span>Daily Activities & Progress</span>
               </Label>
               <Textarea
                 id="content"
-                placeholder="Describe your daily activities, tasks completed, challenges faced, and any important updates..."
+                placeholder="Describe your daily activities, tasks completed, challenges faced, and any important updates. Be specific about your achievements and what you learned today..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={6}
                 required
-                className="resize-none border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
+                className="border-gray-300 focus:border-gray-400 focus:ring-gray-400 resize-none"
               />
+
+              {/* Character Counter */}
+              <div className="flex justify-between items-center text-xs text-gray-500">
+                <span>{content.length} characters written</span>
+
+              </div>
             </div>
+
+
           </CardContent>
-          <CardFooter className="border-t border-slate-100 p-6">
+
+          {/* Footer with Submit Button */}
+          <CardFooter className="pt-4">
             <Button
               type="submit"
               disabled={isSubmitting || !content.trim()}
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
-                <div className="flex items-center">
+                <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Submitting...
+                  <span>Submitting...</span>
                 </div>
               ) : (
                 <>
@@ -176,6 +212,5 @@ export function ReportSubmission() {
         </form>
       </Card>
     </div>
-
   )
 }

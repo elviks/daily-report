@@ -11,7 +11,7 @@ import {
      DropdownMenuSeparator,
      DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, LogOut, User, Settings } from "lucide-react";
+import { FileText, LogOut, User, Settings, Bell, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { NotificationPanel } from "@/components/notification-panel";
@@ -26,7 +26,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
      const [user, setUser] = useState<any | null>(null);
      const router = useRouter();
-     const { checkAndCreateNotifications } = useNotifications(user?.id || '');
+     const { fetchNotifications } = useNotifications(user?.id || '');
 
      useEffect(() => {
           const userData = localStorage.getItem("user");
@@ -75,26 +75,11 @@ export function DashboardLayout({
 
      useEffect(() => {
           if (user) {
-               checkAndCreateNotifications();
+               fetchNotifications();
           }
-     }, [user, checkAndCreateNotifications]);
+     }, [user, fetchNotifications]);
 
-     useEffect(() => {
-          const onVisible = () => {
-               if (document.visibilityState === 'visible' && user) {
-                    checkAndCreateNotifications();
-               }
-          };
-          const onUserUpdated = () => {
-               if (user) checkAndCreateNotifications();
-          };
-          window.addEventListener('visibilitychange', onVisible);
-          window.addEventListener('userUpdated', onUserUpdated as EventListener);
-          return () => {
-               window.removeEventListener('visibilitychange', onVisible);
-               window.removeEventListener('userUpdated', onUserUpdated as EventListener);
-          };
-     }, [user, checkAndCreateNotifications]);
+
 
      const handleLogout = () => {
           localStorage.removeItem("user");
@@ -103,141 +88,192 @@ export function DashboardLayout({
 
      if (!user) {
           return (
-               <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-                    <div className="flex flex-col items-center space-y-3">
-                         <div className="w-12 h-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                         <p className="text-slate-600 font-medium">
-                              Loading dashboard...
-                         </p>
+               <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center relative overflow-hidden">
+                    {/* Beautiful Loading Background */}
+                    <div className="absolute inset-0">
+                         <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-float"></div>
+                         <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-indigo-400/20 to-pink-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-center space-y-6">
+                         <div className="relative">
+                              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center animate-pulse-glow">
+                                   <FileText className="w-8 h-8 text-white" />
+                              </div>
+                              <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                         </div>
+
+                         <div className="text-center">
+                              <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 bg-clip-text text-transparent mb-2">
+                                   Loading Dashboard
+                              </h2>
+                              <p className="text-slate-600 font-medium">
+                                   Please wait while we prepare your workspace...
+                              </p>
+                         </div>
+
+                         {/* Beautiful Loading Animation */}
+                         <div className="flex space-x-2">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+                              <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                         </div>
                     </div>
                </div>
           );
      }
 
      return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-               <header className="bg-white border-b border-slate-200 shadow-sm">
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative overflow-hidden">
+               {/* Beautiful Background Elements */}
+               <div className="absolute inset-0">
+                    <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-r from-indigo-400/10 to-pink-400/10 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
+               </div>
+
+               {/* Enhanced Header */}
+               <header className="relative z-10 glass border-b border-white/20 shadow-lg backdrop-blur-md">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                         <div className="flex justify-between items-center py-4">
-                              <div className="flex items-center space-x-3">
-                                   <div className="p-2 bg-gradient-to-r from-gray-600 to-gray-600 rounded-xl shadow-md">
-                                        <FileText className="h-6 w-6 text-white" />
+                         <div className="flex justify-between items-center py-6">
+                              {/* Logo and Title */}
+                              <div className="flex items-center space-x-4">
+                                   <div className="relative group">
+                                        <div className="p-3 bg-gray-500 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-110">
+                                             <FileText className="h-7 w-7 text-white" />
+                                        </div>
                                    </div>
-                                   <h1 className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                                        Daily Report Tool
-                                   </h1>
+
+                                   <div>
+                                        <h1 className="text-2xl font-bold text-black bg-black">
+                                             Daily Report
+                                        </h1>
+                                        <p className="text-sm text-slate-600 font-medium">
+                                             Welcome back, {user.name}!
+                                        </p>
+                                   </div>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                   <NotificationPanel userId={user.id} />
+                              {/* Right Side Actions */}
+                              <div className="flex items-center gap-4">
+                                   {/* Notification Panel */}
+                                   <div className="relative">
+                                        <NotificationPanel userId={user.id} />
+                                   </div>
 
+                                   {/* User Profile Dropdown */}
                                    <DropdownMenu>
-                                        <DropdownMenuTrigger
-                                             asChild
-                                        >
+                                        <DropdownMenuTrigger asChild>
                                              <Button
                                                   variant="ghost"
-                                                  className="relative h-12 w-12 rounded-full hover:bg-slate-100 transition-colors duration-200 p-0 overflow-hidden"
+                                                  className="relative h-14 w-auto px-4 rounded-2xl hover:bg-white/20 transition-all duration-300 group border border-white/20 hover:border-white/40"
                                              >
-                                                  <Image
-                                                       src={
-                                                            user.profileImage &&
-                                                                 user
-                                                                      .profileImage
-                                                                      .length >
-                                                                 0
-                                                                 ? user.profileImage
-                                                                 : "/placeholder.svg?height=48&width=48"
-                                                       }
-                                                       alt={
-                                                            user.name
-                                                       }
-                                                       width={48}
-                                                       height={
-                                                            48
-                                                       }
-                                                       className="rounded-full object-cover h-full w-full"
-                                                       unoptimized
-                                                  />
+                                                  <div className="flex items-center space-x-3">
+                                                       <div className="relative">
+                                                            <Image
+                                                                 src={
+                                                                      user.profileImage &&
+                                                                           user
+                                                                                .profileImage
+                                                                                .length >
+                                                                           0
+                                                                           ? user.profileImage
+                                                                           : "/placeholder.svg?height=48&width=48"
+                                                                 }
+                                                                 alt={
+                                                                      user.name
+                                                                 }
+                                                                 width={40}
+                                                                 height={
+                                                                      40
+                                                                 }
+                                                                 className="rounded-xl object-cover h-10 w-10 ring-2 ring-white/50 group-hover:ring-white/80 transition-all duration-300"
+                                                                 unoptimized
+                                                            />
+                                                            {/* Online indicator */}
+                                                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                                                       </div>
+
+                                                       <div className="text-left">
+                                                            <p className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
+                                                                 {user.name}
+                                                            </p>
+                                                            <p className="text-xs text-slate-600 group-hover:text-slate-700 transition-colors">
+                                                                 {user.department}
+                                                            </p>
+                                                       </div>
+
+                                                       <ChevronDown className="h-4 w-4 text-slate-500 group-hover:text-slate-700 transition-colors" />
+                                                  </div>
                                              </Button>
                                         </DropdownMenuTrigger>
+
                                         <DropdownMenuContent
-                                             className="w-64 bg-white border-slate-200 shadow-xl rounded-xl overflow-hidden"
+                                             className="w-72 glass border-white/20 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-md"
                                              align="end"
                                              forceMount
                                         >
-                                             <DropdownMenuLabel className="p-4 border-b border-slate-100">
-                                                  <div className="flex flex-col space-y-1">
-                                                       <p className="text-sm font-semibold text-slate-900">
-                                                            {
-                                                                 user.name
-                                                            }
+                                             <DropdownMenuLabel className="p-6 border-b border-white/20 bg-purple-50/50">
+                                                  <div className="flex flex-col space-y-2">
+                                                       <p className="text-lg font-semibold text-slate-900">
+                                                            {user.name}
                                                        </p>
-                                                       <p className="text-xs text-slate-500 truncate">
-                                                            {
-                                                                 user.email
-                                                            }
+                                                       <p className="text-sm text-slate-600 truncate">
+                                                            {user.email}
                                                        </p>
-                                                       <p className="text-xs text-slate-500">
-                                                            {
-                                                                 user.department
-                                                            }
-                                                       </p>
+                                                       <div className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full">
+                                                            <span className="text-xs font-medium text-gray-700">
+                                                                 {user.department}
+                                                            </span>
+                                                       </div>
                                                   </div>
                                              </DropdownMenuLabel>
-                                             <DropdownMenuSeparator className="bg-slate-100" />
-                                             <DropdownMenuItem
-                                                  asChild
-                                                  className="group hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
-                                             >
-                                                  <Link
-                                                       href="/profile"
-                                                       className="flex items-center"
+
+                                             <div className="p-2">
+                                                  <DropdownMenuItem
+                                                       asChild
+                                                       className="group hover:bg-white/20 transition-all duration-200 cursor-pointer rounded-xl p-3"
                                                   >
-                                                       <User className="mr-3 h-4 w-4 text-slate-500 group-hover:text-gray-600 transition-colors" />
-                                                       <span className="text-slate-700 group-hover:text-gray-600">
-                                                            Profile
-                                                       </span>
-                                                  </Link>
-                                             </DropdownMenuItem>
-                                             <DropdownMenuItem
-                                                  asChild
-                                                  className="group hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
-                                             >
-                                                  <Link
-                                                       href="/debug"
-                                                       className="flex items-center"
+                                                       <Link
+                                                            href="/profile"
+                                                            className="flex items-center"
+                                                       >
+                                                            <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors duration-200 mr-3">
+                                                                 <User className="h-4 w-4 text-gray-600" />
+                                                            </div>
+                                                            <span className="text-slate-700 group-hover:text-slate-900 font-medium">
+                                                                 Profile Settings
+                                                            </span>
+                                                       </Link>
+                                                  </DropdownMenuItem>
+
+                                                  <DropdownMenuSeparator className="bg-white/20 my-2" />
+
+                                                  <DropdownMenuItem
+                                                       onClick={handleLogout}
+                                                       className="group hover:bg-gray-50 hover:text-gray-600 transition-all duration-200 cursor-pointer rounded-xl p-3"
                                                   >
-                                                       <Settings className="mr-3 h-4 w-4 text-slate-500 group-hover:text-gray-600 transition-colors" />
-                                                       <span className="text-slate-700 group-hover:text-gray-600">
-                                                            Debug
+                                                       <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors duration-200 mr-3">
+                                                            <LogOut className="h-4 w-4 text-gray-600" />
+                                                       </div>
+                                                       <span className="font-medium">
+                                                            Sign Out
                                                        </span>
-                                                  </Link>
-                                             </DropdownMenuItem>
-                                             <DropdownMenuSeparator className="bg-slate-100" />
-                                             <DropdownMenuItem
-                                                  onClick={
-                                                       handleLogout
-                                                  }
-                                                  className="group hover:bg-red-50 hover:text-red-600 transition-colors duration-150 cursor-pointer"
-                                             >
-                                                  <LogOut className="mr-3 h-4 w-4 text-red-500 group-hover:text-red-600 transition-colors" />
-                                                  <span className="font-medium">
-                                                       Log out
-                                                  </span>
-                                             </DropdownMenuItem>
+                                                  </DropdownMenuItem>
+                                             </div>
                                         </DropdownMenuContent>
                                    </DropdownMenu>
                               </div>
                          </div>
                     </div>
-               </header>
+               </header >
 
-               <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                    <div className="px-4 py-6 sm:px-0">
+               {/* Main Content */}
+               <main className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8" >
+                    <div className="glass rounded-3xl border border-white/20 shadow-2xl backdrop-blur-md p-8">
                          {children}
                     </div>
-               </main>
-          </div>
+               </main >
+          </div >
      );
 }

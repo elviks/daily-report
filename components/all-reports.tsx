@@ -165,49 +165,7 @@ export function AllReports() {
           setFilteredReports(filtered);
      };
 
-     const exportReports = async () => {
-          try {
-               const response = await fetch(
-                    "/api/admin/export",
-                    {
-                         method: "POST",
-                         headers: {
-                              "Content-Type":
-                                   "application/json",
-                         },
-                         body: JSON.stringify({
-                              reports: filteredReports,
-                              filters: {
-                                   searchTerm,
-                                   dateFilter,
-                                   departmentFilter,
-                              },
-                         }),
-                    }
-               );
 
-               if (response.ok) {
-                    const blob = await response.blob();
-                    const url =
-                         window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.style.display = "none";
-                    a.href = url;
-                    a.download = `reports-${new Date()
-                         .toISOString()
-                         .split("T")[0]
-                         }.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-               }
-          } catch (error) {
-               console.error(
-                    "Error exporting reports:",
-                    error
-               );
-          }
-     };
 
      const formatDate = (dateString: string) => {
           return new Date(dateString).toLocaleDateString(
@@ -261,13 +219,6 @@ export function AllReports() {
                                    reports)
                               </CardDescription>
                          </div>
-                         <Button
-                              onClick={exportReports}
-                              variant="outline"
-                         >
-                              <Download className="mr-2 h-4 w-4" />
-                              Export CSV
-                         </Button>
                     </div>
                </CardHeader>
                <CardContent className="space-y-4">
@@ -340,7 +291,7 @@ export function AllReports() {
                                                   key={
                                                        report.id
                                                   }
-                                                  className="border rounded-lg p-4 space-y-3"
+                                                  className="border p-4 space-y-3"
                                              >
                                                   <div className="flex items-center justify-between">
                                                        <div className="flex items-center gap-3">

@@ -17,7 +17,7 @@ import {
      Alert,
      AlertDescription,
 } from "@/components/ui/alert";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock, Sparkles } from "lucide-react";
 
 export function LoginForm() {
      const [email, setEmail] = useState("");
@@ -77,44 +77,35 @@ export function LoginForm() {
      };
 
      return (
-          <Card className="w-full max-w-md shadow-xl hover:shadow-2xl transition-shadow duration-300">
-               <CardHeader className="space-y-1 text-center">
-                    <div className="flex justify-center mb-2">
-                         <div className="p-3 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full">
-                              <svg
-                                   className="w-8 h-8 text-white"
-                                   fill="none"
-                                   stroke="currentColor"
-                                   viewBox="0 0 24 24"
-                                   xmlns="http://www.w3.org/2000/svg"
-                              >
-                                   <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                                   />
-                              </svg>
+          <Card className="w-full max-w-md border-0 transform overflow-hidden p-10">
+               <CardHeader className="relative space-y-4 text-center pb-2">
+                    {/* Animated Logo */}
+                    <div className="flex justify-center mb-4">
+                         <div className="relative">
+                              <div className="p-4 bg-gradient-to-r from-slate-500 via-gray-500 to-slate-500 rounded-2xl shadow-lg animate-pulse-glow">
+                                   <Sparkles className="w-8 h-8 text-white" />
+                              </div>
+                              {/* Floating particles */}
+                              <div className="absolute -top-2 -right-2 w-3 h-3 bg-gray-400 rounded-full animate-ping"></div>
+                              <div className="absolute -bottom-2 -left-2 w-2 h-2 bg-gray-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
                          </div>
                     </div>
-                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                         Welcome Back
+
+                    <CardTitle className="text-3xl font-bold text-black bg-clip-text">
+                         Daily Report
                     </CardTitle>
-                    <CardDescription className="text-slate-600">
-                         Enter your credentials to access
-                         your account
-                    </CardDescription>
                </CardHeader>
-               <form onSubmit={handleSubmit}>
-                    <CardContent className="space-y-6">
+
+               <form onSubmit={handleSubmit} className="relative">
+                    <CardContent className="space-y-6 pb-6">
                          {error && (
                               <Alert
                                    variant="destructive"
-                                   className="border-red-200 bg-red-50"
+                                   className="border-red-200 bg-red-50/80 backdrop-blur-sm animate-shake"
                               >
-                                   <AlertDescription className="flex items-center text-red-700">
+                                   <AlertDescription className="flex items-center text-red-700 font-medium">
                                         <svg
-                                             className="w-5 h-5 mr-2"
+                                             className="w-5 h-5 mr-2 flex-shrink-0"
                                              fill="currentColor"
                                              viewBox="0 0 20 20"
                                              xmlns="http://www.w3.org/2000/svg"
@@ -129,15 +120,16 @@ export function LoginForm() {
                                    </AlertDescription>
                               </Alert>
                          )}
-                         <div className="space-y-2">
+
+                         <div className="space-y-3">
                               <Label
                                    htmlFor="email"
-                                   className="text-slate-700 font-medium"
+                                   className="text-slate-700 font-semibold text-sm uppercase tracking-wide"
                               >
                                    Email Address
                               </Label>
-                              <div className="relative">
-                                   <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                              <div className="relative group">
+                                   <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors duration-300" />
                                    <Input
                                         id="email"
                                         type="email"
@@ -150,19 +142,21 @@ export function LoginForm() {
                                              )
                                         }
                                         required
-                                        className="pl-10 h-12 border-slate-300 focus:border-gray-500 focus:ring-gray-500 transition-colors duration-200"
+                                        className="pl-12 h-14 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 rounded-xl text-base bg-white/80 backdrop-blur-sm hover:bg-white focus:bg-white"
                                    />
+                                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-blue-500/0 to-blue-500/0 group-focus-within:from-blue-500/5 group-focus-within:via-blue-500/10 group-focus-within:to-purple-500/5 transition-all duration-500 pointer-events-none"></div>
                               </div>
                          </div>
-                         <div className="space-y-2">
+
+                         <div className="space-y-3">
                               <Label
                                    htmlFor="password"
-                                   className="text-slate-700 font-medium"
+                                   className="text-slate-700 font-semibold text-sm uppercase tracking-wide"
                               >
                                    Password
                               </Label>
-                              <div className="relative">
-                                   <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                              <div className="relative group">
+                                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-500 transition-colors duration-300" />
                                    <Input
                                         id="password"
                                         type="password"
@@ -175,36 +169,34 @@ export function LoginForm() {
                                              )
                                         }
                                         required
-                                        className="pl-10 h-12 border-slate-300 focus:border-gray-500 focus:ring-gray-500 transition-colors duration-200"
+                                        className="pl-12 h-14 border-2 border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 rounded-xl text-base bg-white/80 backdrop-blur-sm hover:bg-white focus:bg-white"
                                    />
+                                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-purple-500/0 to-purple-500/0 group-focus-within:from-purple-500/5 group-focus-within:via-purple-500/10 group-focus-within:to-pink-500/5 transition-all duration-500 pointer-events-none"></div>
                               </div>
                          </div>
                     </CardContent>
-                    <CardFooter className="flex flex-col space-y-4 mt-6">
+
+                    <CardFooter className="flex flex-col space-y-4 pt-0">
                          <Button
                               type="submit"
-                              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-700 text-white transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                              className="w-full h-14 text-base font-semibold bg-gray-500 hover:bg-gray-600 text-white transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-xl hover:shadow-2xl rounded-xl border-0 relative overflow-hidden group"
                               disabled={isLoading}
                          >
-                              {isLoading && (
-                                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              )}
-                              {isLoading
-                                   ? "Signing in..."
-                                   : "Sign In"}
-                         </Button>
+                              {/* Shimmer effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
 
-                         <div className="text-center text-sm text-slate-500">
-                              <p>
-                                   Don't have an account?{" "}
-                                   <a
-                                        href="/register"
-                                        className="font-medium text-gray-600 hover:text-gray-500 hover:underline transition-colors duration-150"
-                                   >
-                                        Sign up
-                                   </a>
-                              </p>
-                         </div>
+                              {isLoading ? (
+                                   <div className="flex items-center justify-center">
+                                        <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                                        <span>Signing in...</span>
+                                   </div>
+                              ) : (
+                                   <>
+                                        <Sparkles className="mr-2 h-5 w-5" />
+                                        Sign In
+                                   </>
+                              )}
+                         </Button>
                     </CardFooter>
                </form>
           </Card>

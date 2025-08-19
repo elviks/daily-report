@@ -9,6 +9,20 @@ export async function GET() {
                throw new Error("Database client is not available");
           }
           const db = client.db("daily-report");
+
+          // Fix any existing users with "superadmin" role
+          try {
+               const result = await db.collection("users").updateMany(
+                    { role: "superadmin" },
+                    { $set: { role: "user" } }
+               );
+               if (result.modifiedCount > 0) {
+                    console.log(`Fixed ${result.modifiedCount} users with superadmin role`);
+               }
+          } catch (fixError) {
+               console.warn("Could not fix existing superadmin users:", fixError);
+          }
+
           const users = await db
                .collection("users")
                .aggregate([
@@ -18,7 +32,13 @@ export async function GET() {
                               id: { $ifNull: ["$id", { $toString: "$_id" }] },
                               name: 1,
                               email: 1,
-                              role: { $ifNull: ["$role", "user"] },
+                              role: {
+                                   $cond: {
+                                        if: { $in: ["$role", ["user", "admin"]] },
+                                        then: "$role",
+                                        else: "user"
+                                   }
+                              },
                               department: { $ifNull: ["$department", ""] },
                               phone: { $ifNull: ["$phone", ""] },
                               profileImage: { $ifNull: ["$profileImage", ""] },
@@ -41,6 +61,9 @@ export async function POST(request: Request) {
      try {
           const { name, email, password, department, phone, role } = await request.json();
 
+          // Debug logging
+          console.log("Received user data:", { name, email, department, phone, role });
+
           // Validation
           if (!name || !email || !password || !department) {
                return NextResponse.json(
@@ -48,6 +71,10 @@ export async function POST(request: Request) {
                     { status: 400 }
                );
           }
+
+          // Ensure role is set to "user" by default, not "superadmin"
+          const userRole = role === "admin" ? "admin" : "user";
+          console.log("Final role assignment:", userRole);
 
           // Check if user already exists in mock data
           const existingUser = getUserByEmail(email);
@@ -58,17 +85,7 @@ export async function POST(request: Request) {
                );
           }
 
-          // Create new user using helper function
-          const newUser = addUser({
-               name,
-               email,
-               password, // In production, this should be hashed
-               role: role || "user",
-               department,
-               phone: phone || "",
-               profileImage: "",
-               createdAt: new Date().toISOString(),
-          });
+
 
           // Try to persist to MongoDB if configured
           try {
@@ -90,31 +107,75 @@ export async function POST(request: Request) {
                          );
                     }
 
-                    // Insert new user with consistent ID format
-                    await usersCol.insertOne({
-                         id: newUser.id, // This is the string ID from mock data
+                    // Generate unique ID for database
+                    const existingUsers = await usersCol.find({}).toArray();
+                    const existingIds = existingUsers.map(u => parseInt(u.id || "0")).sort((a, b) => a - b);
+                    let newId = 1;
+
+                    for (const id of existingIds) {
+                         if (id === newId) {
+                              newId++;
+                         } else {
+                              break;
+                         }
+                    }
+
+                    const uniqueId = newId.toString();
+                    console.log("Creating user with unique ID:", uniqueId);
+
+                    // Insert new user with unique database ID
+                    const userToInsert = {
+                         id: uniqueId,
                          name,
                          email,
                          password, // In production, this should be hashed
-                         role: role || "user",
+                         role: userRole, // Use the properly assigned role
                          department,
                          phone: phone || "",
                          profileImage: "",
                          createdAt: new Date(),
-                    });
+                    };
+
+                    console.log("Inserting user with role:", userToInsert.role);
+                    await usersCol.insertOne(userToInsert);
+
+                    // Return user with database-generated ID
+                    const userWithoutPassword = {
+                         id: uniqueId,
+                         name,
+                         email,
+                         role: userRole, // Use the properly assigned role
+                         department,
+                         phone: phone || "",
+                         profileImage: "",
+                         createdAt: new Date().toISOString(),
+                    };
+
+                    return NextResponse.json({
+                         message: "User created successfully",
+                         user: userWithoutPassword,
+                    }, { status: 201 });
                }
           } catch (dbError) {
                console.warn("Failed to persist user to database:", dbError);
-               // Continue with mock data only
+               // Fallback to mock data only if database fails
+               const newUser = addUser({
+                    name,
+                    email,
+                    password, // In production, this should be hashed
+                    role: userRole, // Use the properly assigned role
+                    department,
+                    phone: phone || "",
+                    profileImage: "",
+                    createdAt: new Date().toISOString(),
+               });
+
+               const { password: _, ...userWithoutPassword } = newUser;
+               return NextResponse.json({
+                    message: "User created successfully (mock data only)",
+                    user: userWithoutPassword,
+               }, { status: 201 });
           }
-
-          // Return user without password
-          const { password: _, ...userWithoutPassword } = newUser;
-
-          return NextResponse.json({
-               message: "User created successfully",
-               user: userWithoutPassword,
-          }, { status: 201 });
 
      } catch (error) {
           console.error("Error creating user:", error);

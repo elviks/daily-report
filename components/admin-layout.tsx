@@ -71,9 +71,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
 
-              <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-gray-500/10 to-gray-500/10 rounded-2xl border border-purple-200/50">
+                  <BarChart3 className="w-6 h-6 text-gray-600 mr-2" />
+                  <span className="text-gray-700 font-semibold">Admin Dashboard</span>
+                </div>
+              </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
