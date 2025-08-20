@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
                try {
                     const client = await clientPromise;
                     if (client) {
-                         const db = client.db("daily-report");
+                         const db = client.db("dailyreport");
                          const usersCol = db.collection("users");
                          const dbUser = await usersCol.findOne({ email });
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           try {
                const client = await clientPromise;
                if (client) {
-                    const db = client.db("daily-report");
+                    const db = client.db("dailyreport");
                     const usersCol = db.collection("users");
                     const dbUser = await usersCol.findOne({ email });
                     if (dbUser && dbUser.profileImage) {

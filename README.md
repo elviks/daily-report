@@ -14,13 +14,13 @@ Create a `.env.local` file in the root directory with:
 
 ```env
 # MongoDB Connection String (Optional - app works without it)
-MONGODB_URI=mongodb://localhost:27017/daily-report
+MONGODB_URI=mongodb://localhost:27017/dailyreport
 
 # For MongoDB Atlas (cloud):
-# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/daily-report?retryWrites=true&w=majority
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dailyreport?retryWrites=true&w=majority
 
 # For local MongoDB:
-# MONGODB_URI=mongodb://localhost:27017/daily-report
+# MONGODB_URI=mongodb://localhost:27017/dailyreport
 ```
 
 ### 3. Run the Application

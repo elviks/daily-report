@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
         }
 
         const client = await clientPromise;
-        const db = client.db("daily-report");
+        const db = client.db("dailyreport");
 
 
 

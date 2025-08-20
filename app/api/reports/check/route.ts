@@ -22,7 +22,7 @@ export async function GET(request: Request) {
                     { status: 500 }
                );
           }
-          const db = client.db("daily-report");
+          const db = client.db("dailyreport");
 
           // Convert userId to ObjectId if it's valid, otherwise keep as string
           const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
                     { status: 500 }
                );
           }
-          const db = client.db("daily-report");
+          const db = client.db("dailyreport");
 
           // Convert userId to ObjectId if it's valid, otherwise keep as string
           const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;

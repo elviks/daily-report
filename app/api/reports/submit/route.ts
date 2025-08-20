@@ -29,7 +29,7 @@ export async function POST(request: Request) {
           try {
                const client = await clientPromise;
                if (client) {
-                    const db = client.db("daily-report");
+                    const db = client.db("dailyreport");
                     const reportsCol = db.collection("reports");
 
                     // Check existing report for this user and date

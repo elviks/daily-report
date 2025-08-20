@@ -21,7 +21,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const db = client.db("daily-report");
+        const db = client.db("dailyreport");
         const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
         // Find all notifications for this user

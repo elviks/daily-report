@@ -6,7 +6,7 @@ export async function POST(request: Request) {
           const data = await request.json();
 
           const client = await clientPromise;
-          const db = client.db("daily-report");
+          const db = client.db("dailyreport");
 
           const result = await db
                .collection("reports")

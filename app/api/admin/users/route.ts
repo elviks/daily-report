@@ -8,7 +8,7 @@ export async function GET() {
           if (!client) {
                throw new Error("Database client is not available");
           }
-          const db = client.db("daily-report");
+          const db = client.db("dailyreport");
 
           // Fix any existing users with "superadmin" role
           try {
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
           try {
                const client = await clientPromise;
                if (client) {
-                    const db = client.db("daily-report");
+                    const db = client.db("dailyreport");
                     const usersCol = db.collection("users");
 
                     // Check if user already exists in DB

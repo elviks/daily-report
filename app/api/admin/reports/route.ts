@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 export async function GET(request: Request) {
      // CRITICAL: Check if user is admin
      const headersList = headers();
-     const userRole = headersList.get("x-user-role");
+     const userRole = (await headersList).get("x-user-role");
 
      if (userRole !== "superadmin") {
           return NextResponse.json(
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
           if (!client) {
                throw new Error("Database client is not available");
           }
-          const db = client.db("daily-report");
+          const db = client.db("dailyreport");
 
           // Get reports with robust user join (handles string vs ObjectId userId)
           const reports = await db

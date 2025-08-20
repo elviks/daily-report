@@ -28,7 +28,7 @@ export async function DELETE(
         try {
             const client = await clientPromise;
             if (client) {
-                const db = client.db("daily-report");
+                const db = client.db("dailyreport");
                 const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
                 // Check if user exists in DB

@@ -15,11 +15,11 @@ async function testMongoDB() {
     try {
         // Ensure the URI has the database name
         let cleanUri = uri;
-        if (!cleanUri.includes('/daily-report')) {
+        if (!cleanUri.includes('/dailyreport')) {
             if (cleanUri.includes('?')) {
-                cleanUri = cleanUri.replace('?', '/daily-report?');
+                cleanUri = cleanUri.replace('?', '/dailyreport?');
             } else {
-                cleanUri = cleanUri + '/daily-report';
+                cleanUri = cleanUri + '/dailyreport';
             }
         }
         
@@ -30,7 +30,7 @@ async function testMongoDB() {
         
         console.log('✅ MongoDB connection successful!');
         
-        const db = client.db('daily-report');
+        const db = client.db('dailyreport');
         const collections = await db.listCollections().toArray();
         console.log('📁 Collections found:', collections.map(c => c.name));
         

@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
             try {
                 const client = await clientPromise;
                 if (client) {
-                    const db = client.db("daily-report");
+                    const db = client.db("dailyreport");
                     const usersCol = db.collection("users");
                     const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
                     const filter = { $or: [{ _id: idFilter }, { id }] };
@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest) {
         try {
             const client = await clientPromise;
             if (client) {
-                const db = client.db("daily-report");
+                const db = client.db("dailyreport");
                 const usersCol = db.collection("users");
                 const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
                 const filter = { $or: [{ _id: idFilter }, { id }] };

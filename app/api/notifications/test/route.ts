@@ -11,7 +11,7 @@ export async function GET() {
             );
         }
 
-        const db = client.db("daily-report");
+        const db = client.db("dailyreport");
 
         // Get all notifications
         const notifications = await db

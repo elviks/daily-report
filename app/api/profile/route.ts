@@ -28,7 +28,7 @@ export async function POST(request: Request) {
             try {
                 const client = await clientPromise;
                 if (client) {
-                    const db = client.db("daily-report");
+                    const db = client.db("dailyreport");
                     const users = db.collection("users");
                     const dbUser = await users.findOne({ $or: [{ id }, { email }] });
 

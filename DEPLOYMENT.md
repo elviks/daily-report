@@ -18,10 +18,10 @@ The application works with or without MongoDB:
 ### Example Environment Variables
 ```env
 # For MongoDB Atlas (cloud):
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/daily-report?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dailyreport?retryWrites=true&w=majority
 
 # For local MongoDB:
-MONGODB_URI=mongodb://localhost:27017/daily-report
+MONGODB_URI=mongodb://localhost:27017/dailyreport
 ```
 
 ## Deployment Methods
@@ -42,8 +42,8 @@ A `Dockerfile` is provided for containerized deployment.
 
 **Build and run locally:**
 ```bash
-docker build -t daily-report-tool .
-docker run -p 3000:3000 daily-report-tool
+docker build -t dailyreport-tool .
+docker run -p 3000:3000 dailyreport-tool
 ```
 
 **Deploy to container platforms:**

@@ -29,6 +29,17 @@ if (uri) {
                if (!url.pathname || url.pathname === '/') {
                     url.pathname = '/daily-report';
                }
+
+               // Add SSL configuration for Coolify MongoDB
+               if (url.hostname.includes('wccwwc0swkw4k00880kw84w8')) {
+                    // Coolify MongoDB - disable SSL and add other options
+                    url.searchParams.set('ssl', 'false');
+                    url.searchParams.set('tls', 'false');
+                    url.searchParams.set('tlsAllowInvalidCertificates', 'true');
+                    url.searchParams.set('tlsAllowInvalidHostnames', 'true');
+                    url.searchParams.set('directConnection', 'true');
+               }
+
                cleanUri = url.toString();
           }
 
