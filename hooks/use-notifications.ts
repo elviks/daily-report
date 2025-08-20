@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { isWorkingDay } from '@/lib/utils';
 
 export interface NotificationData {
+    _id: any;
     id: string;
     userId: string;
     message: string;

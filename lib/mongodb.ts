@@ -24,12 +24,12 @@ if (uri) {
 
           // Ensure the URI has the database name
           if (!cleanUri.includes('/daily-report')) {
-               // Add database name if not present
-               if (cleanUri.includes('?')) {
-                    cleanUri = cleanUri.replace('?', '/daily-report?');
-               } else {
-                    cleanUri = cleanUri + '/daily-report';
+               // Parse the URI to properly add database name
+               const url = new URL(cleanUri);
+               if (!url.pathname || url.pathname === '/') {
+                    url.pathname = '/daily-report';
                }
+               cleanUri = url.toString();
           }
 
           console.log("🔧 Cleaned MongoDB URI:", cleanUri.substring(0, 50) + '...');
