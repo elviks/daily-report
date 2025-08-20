@@ -93,3 +93,13 @@ For production deployment with persistent data:
 3. **Deploy** - app will automatically use MongoDB when available
 
 The application is now **production-ready** with automatic fallback to mock data when MongoDB is unavailable!
+
+## Deployment
+
+The application is now **deployment-ready**! See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy Options:
+- **Coolify/Railway**: Push to Git repository (uses Nixpacks)
+- **Docker**: Use provided Dockerfile
+- **Vercel**: Use Vercel CLI or connect Git repository
+- **Netlify**: Connect Git repository with build settings

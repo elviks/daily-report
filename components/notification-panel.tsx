@@ -128,7 +128,7 @@ export function NotificationPanel({ userId }: NotificationPanelProps) {
                         <div className="flex flex-col items-center justify-center py-8">
                             <div className="relative mb-4">
                                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center animate-pulse-glow">
-                                    <Bell className="w-6 h-6 text-white" />
+                                    <Bell className="w-6 h-6 text-black bg-black" />
                                 </div>
                                 <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
                             </div>
