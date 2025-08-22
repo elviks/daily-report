@@ -1,6 +1,9 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        - MONGODB_URI=mongodb://db:27017/dailyreport
     ports:
       - "3016:3016"
     environment:

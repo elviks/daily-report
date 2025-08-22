@@ -4,6 +4,12 @@ FROM node:20-slim
 # Set the working directory in the container
 WORKDIR /app
 
+# Accept MONGODB_URI as a build argument
+ARG MONGODB_URI
+
+# Set the MONGODB_URI environment variable
+ENV MONGODB_URI=$MONGODB_URI
+
 # Install pnpm
 RUN npm install -g pnpm
 
