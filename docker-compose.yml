@@ -2,9 +2,9 @@ services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - "3016:3016"
     environment:
-      - MONGODB_URI=mongodb://db:27017/daily-report
+      - MONGODB_URI=mongodb://db:27017/dailyreport
     depends_on:
       - db
 
