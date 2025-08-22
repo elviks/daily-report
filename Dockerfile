@@ -4,20 +4,23 @@ FROM node:20-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the container
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Install app dependencies
-RUN npm install
+# Copy package management files
+COPY package.json pnpm-lock.yaml ./
 
-# Copy the rest of the application code to the container
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the application code
 COPY . .
 
 # Build the Next.js app
-RUN npm run build
+RUN pnpm build
 
 # Expose the port the app runs on
 EXPOSE 3016
 
 # Define the command to run the app
-CMD ["npm", "start", "-p", "3016"]
+CMD ["pnpm", "start", "--", "--port", "3016"]
