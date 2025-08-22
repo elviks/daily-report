@@ -29,4 +29,4 @@ RUN pnpm build
 EXPOSE 3016
 
 # Define the command to run the app
-CMD ["pnpm", "start", "--", "--port", "3016"]
+CMD ["pnpm", "start"]
