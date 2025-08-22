@@ -22,7 +22,7 @@ export async function GET(request: Request) {
             );
         }
 
-        const db = client.db("dailyreport");
+        const db = client.db("daily-report");
         const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
         const notifications = await db
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const db = client.db("dailyreport");
+        const db = client.db("daily-report");
         const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
         // Check if notification already exists for this user, type, and date
@@ -137,7 +137,7 @@ export async function PUT(request: Request) {
             );
         }
 
-        const db = client.db("dailyreport");
+        const db = client.db("daily-report");
         const notificationIdObj = ObjectId.isValid(notificationId)
             ? new ObjectId(notificationId)
             : notificationId;

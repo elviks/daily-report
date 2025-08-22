@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AllReports } from "@/components/all-reports"
 import { UserManagement } from "@/components/user-management"
+import { WorkCalendar } from "@/components/work-calendar"
 import { Users, FileText, TrendingUp, Calendar, BarChart3, Activity, Zap, Target, Settings } from "lucide-react"
 
 interface DashboardStats {
@@ -131,20 +132,27 @@ export function AdminDashboard() {
         <CardContent className="p-0">
           <Tabs defaultValue="reports" className="w-full">
             <div className="px-6 pt-6">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-100/50 rounded-xl p-1">
+              <TabsList className="flex w-full bg-slate-100/50 rounded-xl p-1">
                 <TabsTrigger
                   value="reports"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   All Reports
                 </TabsTrigger>
                 <TabsTrigger
                   value="users"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   User Management
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calender"
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Work Calender
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -155,6 +163,10 @@ export function AdminDashboard() {
 
             <TabsContent value="users" className="p-6 space-y-4">
               <UserManagement />
+            </TabsContent>
+
+            <TabsContent value="calender" className="p-6 space-y-4">
+              <WorkCalendar />
             </TabsContent>
           </Tabs>
         </CardContent>

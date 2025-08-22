@@ -30,14 +30,16 @@ if (uri) {
                     url.pathname = '/daily-report';
                }
 
-               // Add SSL configuration for Coolify MongoDB
-               if (url.hostname.includes('wccwwc0swkw4k00880kw84w8')) {
-                    // Coolify MongoDB - disable SSL and add other options
-                    url.searchParams.set('ssl', 'false');
-                    url.searchParams.set('tls', 'false');
+               // Add SSL configuration for MongoDB Atlas
+               if (url.hostname.includes('mongodb.net')) {
+                    // MongoDB Atlas - configure SSL properly
+                    url.searchParams.set('ssl', 'true');
+                    url.searchParams.set('tls', 'true');
                     url.searchParams.set('tlsAllowInvalidCertificates', 'true');
                     url.searchParams.set('tlsAllowInvalidHostnames', 'true');
-                    url.searchParams.set('directConnection', 'true');
+                    url.searchParams.set('retryWrites', 'true');
+                    url.searchParams.set('w', 'majority');
+                    url.searchParams.set('directConnection', 'false');
                }
 
                cleanUri = url.toString();
@@ -47,12 +49,28 @@ if (uri) {
 
           if (process.env.NODE_ENV === "development") {
                if (!global._mongoClientPromise) {
-                    client = new MongoClient(cleanUri);
+                    client = new MongoClient(cleanUri, {
+                         ssl: true,
+                         tls: true,
+                         tlsAllowInvalidCertificates: true,
+                         tlsAllowInvalidHostnames: true,
+                         retryWrites: true,
+                         w: 'majority',
+                         directConnection: false
+                    });
                     global._mongoClientPromise = client.connect();
                }
                clientPromise = global._mongoClientPromise;
           } else {
-               client = new MongoClient(cleanUri);
+               client = new MongoClient(cleanUri, {
+                    ssl: true,
+                    tls: true,
+                    tlsAllowInvalidCertificates: true,
+                    tlsAllowInvalidHostnames: true,
+                    retryWrites: true,
+                    w: 'majority',
+                    directConnection: false
+               });
                clientPromise = client.connect();
           }
 

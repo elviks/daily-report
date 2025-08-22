@@ -12,43 +12,43 @@ export async function POST(request: Request) {
         let user = null;
         let userFound = false;
 
-        // First try to find user in mock data
-        if (id) {
-            user = getUserById(id);
-        } else if (email) {
-            user = getUserByEmail(email);
-        }
+        // First try to find user in database (prioritize database over mock data)
+        try {
+            const client = await clientPromise;
+            if (client) {
+                const db = client.db("daily-report");
+                const users = db.collection("users");
+                const dbUser = await users.findOne({ $or: [{ id }, { email }] });
 
-        if (user) {
-            userFound = true;
-        }
-
-        // If not found in mock data, try to find in database
-        if (!userFound) {
-            try {
-                const client = await clientPromise;
-                if (client) {
-                    const db = client.db("dailyreport");
-                    const users = db.collection("users");
-                    const dbUser = await users.findOne({ $or: [{ id }, { email }] });
-
-                    if (dbUser) {
-                        user = {
-                            id: dbUser.id || dbUser._id?.toString(),
-                            name: dbUser.name,
-                            email: dbUser.email,
-                            password: dbUser.password,
-                            role: dbUser.role,
-                            department: dbUser.department,
-                            phone: dbUser.phone,
-                            profileImage: dbUser.profileImage,
-                            createdAt: dbUser.createdAt,
-                        };
-                        userFound = true;
-                    }
+                if (dbUser) {
+                    user = {
+                        id: dbUser.id || dbUser._id?.toString(),
+                        name: dbUser.name,
+                        email: dbUser.email,
+                        password: dbUser.password,
+                        role: dbUser.role,
+                        department: dbUser.department,
+                        phone: dbUser.phone,
+                        profileImage: dbUser.profileImage,
+                        createdAt: dbUser.createdAt,
+                    };
+                    userFound = true;
                 }
-            } catch (dbError) {
-                console.warn("Database lookup failed:", dbError);
+            }
+        } catch (dbError) {
+            console.warn("Database lookup failed:", dbError);
+        }
+
+        // Only fallback to mock data if database lookup failed or no user found
+        if (!userFound) {
+            if (id) {
+                user = getUserById(id);
+            } else if (email) {
+                user = getUserByEmail(email);
+            }
+
+            if (user) {
+                userFound = true;
             }
         }
 

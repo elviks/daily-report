@@ -7,7 +7,7 @@ export async function GET() {
           if (!client) {
                throw new Error("Database client is null");
           }
-          const db = client.db("dailyreport");
+          const db = client.db("daily-report");
 
           const totalUsers = await db.collection("users").countDocuments();
           const totalReports = await db.collection("reports").countDocuments();

@@ -10,40 +10,40 @@ export async function PUT(request: NextRequest) {
     let user = null;
     let userFound = false;
 
-    // First try to find user in mock data
-    user = getUserById(id);
-    if (user) {
-      userFound = true;
+    // First try to find user in database (prioritize database over mock data)
+    try {
+      const client = await clientPromise;
+      if (client) {
+        const db = client.db("daily-report");
+        const usersCol = db.collection("users");
+        const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
+        const filter = { $or: [{ _id: idFilter }, { id }] };
+
+        const dbUser = await usersCol.findOne(filter);
+        if (dbUser) {
+          user = {
+            id: dbUser.id || dbUser._id?.toString(),
+            name: dbUser.name,
+            email: dbUser.email,
+            password: dbUser.password,
+            role: dbUser.role,
+            department: dbUser.department,
+            phone: dbUser.phone,
+            profileImage: dbUser.profileImage,
+            createdAt: dbUser.createdAt,
+          };
+          userFound = true;
+        }
+      }
+    } catch (dbError) {
+      console.warn("Database lookup failed:", dbError);
     }
 
-    // If not found in mock data, try to find in database
+    // Only fallback to mock data if database lookup failed or no user found
     if (!userFound) {
-      try {
-        const client = await clientPromise;
-        if (client) {
-          const db = client.db("dailyreport");
-          const usersCol = db.collection("users");
-          const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
-          const filter = { $or: [{ _id: idFilter }, { id }] };
-
-          const dbUser = await usersCol.findOne(filter);
-          if (dbUser) {
-            user = {
-              id: dbUser.id || dbUser._id?.toString(),
-              name: dbUser.name,
-              email: dbUser.email,
-              password: dbUser.password,
-              role: dbUser.role,
-              department: dbUser.department,
-              phone: dbUser.phone,
-              profileImage: dbUser.profileImage,
-              createdAt: dbUser.createdAt,
-            };
-            userFound = true;
-          }
-        }
-      } catch (dbError) {
-        console.warn("Database lookup failed:", dbError);
+      user = getUserById(id);
+      if (user) {
+        userFound = true;
       }
     }
 
@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest) {
       try {
         const client = await clientPromise;
         if (client) {
-          const db = client.db("dailyreport");
+          const db = client.db("daily-report");
           const usersCol = db.collection("users");
           const dbUserWithEmail = await usersCol.findOne({ email, id: { $ne: id } });
           if (dbUserWithEmail) {
@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest) {
     try {
       const client = await clientPromise
       if (client) {
-        const db = client.db("dailyreport")
+        const db = client.db("daily-report")
         const usersCol = db.collection("users")
         const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id
         const filter = { $or: [{ _id: idFilter }, { id }] }

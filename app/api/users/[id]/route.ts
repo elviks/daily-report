@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
           if (!client) {
                throw new Error("Database client is not available");
           }
-          const db = client.db("dailyreport");
+          const db = client.db("daily-report");
 
           const userReports = await db
                .collection("reports")

@@ -12,27 +12,15 @@ export async function DELETE(
         let userFound = false;
         let userRole = "";
 
-        // First check if user exists in mock data
-        const mockUser = getUserById(userId);
-        if (mockUser) {
-            userFound = true;
-            userRole = mockUser.role;
-
-            // Prevent deletion of superadmin users
-            if (mockUser.role === "superadmin") {
-                return NextResponse.json({ error: "Cannot delete superadmin users" }, { status: 403 });
-            }
-        }
-
-        // Try to delete from MongoDB if configured
+        // First check if user exists in database (prioritize database over mock data)
+        let dbUser = null;
         try {
             const client = await clientPromise;
             if (client) {
-                const db = client.db("dailyreport");
+                const db = client.db("daily-report");
                 const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
                 // Check if user exists in DB
-                let dbUser = null;
                 if (ObjectId.isValid(userId)) {
                     dbUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
                 }
@@ -64,7 +52,20 @@ export async function DELETE(
             }
         } catch (dbError) {
             console.warn("Database operation failed:", dbError);
-            // Continue with mock data only if database fails
+        }
+
+        // Only check mock data if database lookup failed or no user found
+        if (!userFound) {
+            const mockUser = getUserById(userId);
+            if (mockUser) {
+                userFound = true;
+                userRole = mockUser.role;
+
+                // Prevent deletion of superadmin users
+                if (mockUser.role === "superadmin") {
+                    return NextResponse.json({ error: "Cannot delete superadmin users" }, { status: 403 });
+                }
+            }
         }
 
         // Remove user from mock data

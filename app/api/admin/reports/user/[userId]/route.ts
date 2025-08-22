@@ -10,7 +10,7 @@ export async function GET(
      try {
           const client = await clientPromise;
           if (client) {
-               const db = client.db("dailyreport");
+               const db = client.db("daily-report");
                const userId = params.userId;
                const userIdObj = ObjectId.isValid(userId)
                     ? new ObjectId(userId)

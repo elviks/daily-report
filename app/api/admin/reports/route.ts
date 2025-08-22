@@ -18,7 +18,7 @@ export async function GET(request: Request) {
           if (!client) {
                throw new Error("Database client is not available");
           }
-          const db = client.db("dailyreport");
+          const db = client.db("daily-report");
 
           // Get reports with robust user join (handles string vs ObjectId userId)
           const reports = await db

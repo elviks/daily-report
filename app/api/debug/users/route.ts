@@ -11,7 +11,7 @@ export async function GET() {
         try {
             const client = await clientPromise;
             if (client) {
-                const db = client.db("dailyreport");
+                const db = client.db("daily-report");
                 dbUsers = await db.collection("users").find({}).toArray();
                 dbStatus = "available";
             }

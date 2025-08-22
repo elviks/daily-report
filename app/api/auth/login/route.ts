@@ -12,40 +12,40 @@ export async function POST(request: NextRequest) {
           let user = null;
           let userFound = false;
 
-          // First try to find user by email in mock data
-          user = getUserByEmail(email);
-          if (user) {
-               userFound = true;
+          // First try to find user by email in database (prioritize database over mock data)
+          try {
+               const client = await clientPromise;
+               if (client) {
+                    const db = client.db("daily-report");
+                    const usersCol = db.collection("users");
+                    const dbUser = await usersCol.findOne({ email });
+
+                    if (dbUser) {
+                         // Ensure consistent ID format - prefer string ID if available, otherwise use ObjectId
+                         const userId = dbUser.id || dbUser._id?.toString();
+                         user = {
+                              id: userId,
+                              name: dbUser.name,
+                              email: dbUser.email,
+                              password: dbUser.password,
+                              role: dbUser.role,
+                              department: dbUser.department,
+                              phone: dbUser.phone,
+                              profileImage: dbUser.profileImage,
+                              createdAt: dbUser.createdAt,
+                         };
+                         userFound = true;
+                    }
+               }
+          } catch (dbError) {
+               console.warn("Database lookup failed:", dbError);
           }
 
-          // If not found in mock data, try to find in database
+          // Only fallback to mock data if database lookup failed or no user found
           if (!userFound) {
-               try {
-                    const client = await clientPromise;
-                    if (client) {
-                         const db = client.db("dailyreport");
-                         const usersCol = db.collection("users");
-                         const dbUser = await usersCol.findOne({ email });
-
-                         if (dbUser) {
-                              // Ensure consistent ID format - prefer string ID if available, otherwise use ObjectId
-                              const userId = dbUser.id || dbUser._id?.toString();
-                              user = {
-                                   id: userId,
-                                   name: dbUser.name,
-                                   email: dbUser.email,
-                                   password: dbUser.password,
-                                   role: dbUser.role,
-                                   department: dbUser.department,
-                                   phone: dbUser.phone,
-                                   profileImage: dbUser.profileImage,
-                                   createdAt: dbUser.createdAt,
-                              };
-                              userFound = true;
-                         }
-                    }
-               } catch (dbError) {
-                    console.warn("Database lookup failed:", dbError);
+               user = getUserByEmail(email);
+               if (user) {
+                    userFound = true;
                }
           }
 
@@ -61,26 +61,7 @@ export async function POST(request: NextRequest) {
           // Remove password from response
           const { password: _, ...userWithoutPassword } = user;
 
-          // Try to enrich with DB-stored profile image (if exists)
-          try {
-               const client = await clientPromise;
-               if (client) {
-                    const db = client.db("dailyreport");
-                    const usersCol = db.collection("users");
-                    const dbUser = await usersCol.findOne({ email });
-                    if (dbUser && dbUser.profileImage) {
-                         (userWithoutPassword as any).profileImage = dbUser.profileImage as string;
-                    }
-                    if (dbUser && dbUser.phone && !userWithoutPassword.phone) {
-                         (userWithoutPassword as any).phone = dbUser.phone as string;
-                    }
-                    if (dbUser && dbUser.department && !userWithoutPassword.department) {
-                         (userWithoutPassword as any).department = dbUser.department as string;
-                    }
-               }
-          } catch (_) {
-               // ignore DB enrichment failures
-          }
+          // User data is already complete from database lookup
 
           return NextResponse.json({
                message: "Login successful",
