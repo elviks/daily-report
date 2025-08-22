@@ -103,3 +103,42 @@ The application is now **deployment-ready**! See [DEPLOYMENT.md](./DEPLOYMENT.md
 - **Docker**: Use provided Dockerfile
 - **Vercel**: Use Vercel CLI or connect Git repository
 - **Netlify**: Connect Git repository with build settings
+
+I have now configured your project for deployment with Coolify. Here's a summary of what I've done:
+
+1.  **Created a `Dockerfile`:** This file will be used by Coolify to build a container image of your Next.js application.
+2.  **Created a `docker-compose.yml` file:** This file defines the services for your application and a MongoDB database. It's configured to connect your application to the database container.
+3.  **Simplified the database connection:** I've updated your `lib/mongodb.ts` file to use a direct connection to the MongoDB container, removing the unnecessary complexity of the previous implementation.
+
+To deploy your application, you'll need to push these new files (`Dockerfile` and `docker-compose.yml`) to your Git repository. Once you've done that, you can follow these steps in Coolify:
+
+1.  **Connect your Git repository to Coolify:** In your Coolify dashboard, create a new project and connect it to the Git repository where you've pushed the changes.
+2.  **Configure the build and start commands:** Coolify will automatically detect the `docker-compose.yml` file and use it to build and deploy your application. You shouldn't need to configure any additional build or start commands.
+3.  **Deploy your application:** Once your repository is connected, you can trigger a deployment in Coolify. Coolify will then pull your code, build the Docker images, and start the services defined in your `docker-compose.yml` file.
+
+That's it! You should now have your Next.js application and MongoDB database running in your VPS, managed by Coolify. If you encounter any issues, feel free to ask for further assistance.
+
+### Backing Up and Restoring Your Database
+
+Here's how you can create and restore backups for your MongoDB database:
+
+#### Creating a Backup
+
+1.  **Run the `mongodump` command from your VPS terminal:**
+    ```bash
+    docker-compose exec db mongodump --db daily-report --out /data/backup
+    ```
+    This will create a backup of your `daily-report` database and store it in the `backups` directory in your project folder.
+
+#### Restoring a Backup
+
+1.  **Place your backup files in the `backups` directory on your VPS.** The backup should be a directory named `daily-report`.
+2.  **Run the `mongorestore` command:**
+    ```bash
+    docker-compose exec db mongorestore --db daily-report --drop /data/backup/daily-report
+    ```
+    This will restore your database from the backup.
+
+#### Automating Backups
+
+For a production environment, you can automate your backups by creating a `cron` job on your VPS that runs the `mongodump` command at a regular interval.
