@@ -158,7 +158,7 @@ export function DashboardLayout({
                               <div className="flex items-center gap-4">
                                    {/* Notification Panel */}
                                    <div className="relative">
-                                        <NotificationPanel userId={user.id} />
+                                        <NotificationPanel userId={user._id || user.id} />
                                    </div>
 
                                    {/* User Profile Dropdown */}

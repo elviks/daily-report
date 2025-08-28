@@ -38,32 +38,54 @@ export function WorkCalendar() {
 
     const fetchData = async () => {
         try {
-            // Fetch users
-            const usersResponse = await fetch('/api/debug/users')
-            const usersData = await usersResponse.json()
-
-            // Fetch reports
-            const reportsResponse = await fetch('/api/debug/reports')
-            const reportsData = await reportsResponse.json()
-
-            if (usersData.database?.users) {
-                setUsers(usersData.database.users)
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No authentication token found");
+                return;
             }
 
-            if (reportsData.database?.reports) {
-                setReports(reportsData.database.reports)
+            // Fetch users for current tenant
+            const usersResponse = await fetch('/api/admin/users/tenant', {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            const usersData = await usersResponse.json();
+
+            // Fetch reports for current tenant
+            const reportsResponse = await fetch('/api/reports/tenant', {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            const reportsData = await reportsResponse.json();
+
+            if (usersData.users) {
+                setUsers(usersData.users);
+            }
+
+            if (reportsData.reports) {
+                setReports(reportsData.reports);
             }
         } catch (error) {
-            console.error('Error fetching data:', error)
+            console.error('Error fetching data:', error);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     }
 
     const fetchReportForDate = async (userId: string, date: string) => {
         setLoadingReport(true)
         try {
-            const response = await fetch(`/api/reports/user/${userId}/date/${date}`)
+            const token = localStorage.getItem("token");
+        const response = await fetch(`/api/reports/user/${userId}/date/${date}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        })
             const data = await response.json()
 
             if (data.report) {
@@ -85,7 +107,7 @@ export function WorkCalendar() {
         const dateStr = formatDate(date, day)
         setSelectedUser(user)
         setSelectedDate(dateStr)
-        fetchReportForDate(user.id, dateStr)
+        fetchReportForDate(user._id || user.id, dateStr)
     }
 
     const closeDialog = () => {

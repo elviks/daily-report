@@ -50,10 +50,17 @@ export function ChangePassword({ userId }: ChangePasswordProps) {
         }
 
         try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setError("No authentication token found. Please log in again.");
+                return;
+            }
+
             const response = await fetch("/api/profile/change-password", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     id: userId,

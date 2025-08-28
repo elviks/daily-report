@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { users, getUserById } from "@/lib/mock-data";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
+import { verifyPassword, hashPassword } from "@/lib/db";
 
 export async function PUT(request: NextRequest) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest, user: authUser } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const { id, currentPassword, newPassword } = await request.json();
 
         // Validation
@@ -25,19 +42,22 @@ export async function PUT(request: NextRequest) {
         let user = null;
         let userFound = false;
 
-        // First try to find user in database (prioritize database over mock data)
+        // Find user in database within the same tenant
         try {
             const client = await clientPromise;
             if (client) {
                 const db = client.db("daily-report");
                 const usersCol = db.collection("users");
                 const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
-                const filter = { $or: [{ _id: idFilter }, { id }] };
+                const filter = { 
+                    $or: [{ _id: idFilter }, { id }],
+                    tenantId: new ObjectId(tenantId)
+                };
 
                 const dbUser = await usersCol.findOne(filter);
                 if (dbUser) {
                     user = {
-                        id: dbUser.id || dbUser._id?.toString(),
+                        id: dbUser._id?.toString(),
                         name: dbUser.name,
                         email: dbUser.email,
                         password: dbUser.password,
@@ -54,49 +74,40 @@ export async function PUT(request: NextRequest) {
             console.warn("Database lookup failed:", dbError);
         }
 
-        // Only fallback to mock data if database lookup failed or no user found
-        if (!userFound) {
-            user = getUserById(id);
-            if (user) {
-                userFound = true;
-            }
-        }
-
         if (!userFound || !user) {
-            return NextResponse.json({ message: "User not found" }, { status: 404 });
+            return NextResponse.json({ message: "User not found in this company" }, { status: 404 });
         }
 
         // Verify current password
-        if (user.password !== currentPassword) {
+        if (!verifyPassword(currentPassword, user.password)) {
             return NextResponse.json({ message: "Current password is incorrect" }, { status: 401 });
         }
 
-        // Update password in mock data if user exists there
-        const mockUser = getUserById(id);
-        if (mockUser) {
-            mockUser.password = newPassword;
-        }
-
-        // Try to persist to MongoDB if configured
+        // Update password in database
         try {
             const client = await clientPromise;
             if (client) {
                 const db = client.db("daily-report");
                 const usersCol = db.collection("users");
                 const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
-                const filter = { $or: [{ _id: idFilter }, { id }] };
+                const filter = { 
+                    $or: [{ _id: idFilter }, { id }],
+                    tenantId: new ObjectId(tenantId)
+                };
 
                 await usersCol.updateOne(
                     filter,
                     {
                         $set: {
-                            password: newPassword,
+                            password: hashPassword(newPassword),
+                            updatedAt: new Date(),
                         },
                     }
                 );
             }
         } catch (dbError) {
-            console.warn("Password change persisted to mock store only:", dbError);
+            console.error("Password change failed:", dbError);
+            return NextResponse.json({ message: "Failed to change password" }, { status: 500 });
         }
 
         return NextResponse.json({

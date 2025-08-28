@@ -1,9 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
@@ -27,7 +44,10 @@ export async function GET(request: Request) {
 
         const notifications = await db
             .collection("notifications")
-            .find({ userId: userIdObj })
+            .find({ 
+                userId: userIdObj,
+                tenantId: new ObjectId(tenantId)
+            })
             .sort({ createdAt: -1 })
             .toArray();
 
@@ -41,8 +61,24 @@ export async function GET(request: Request) {
     }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const data = await request.json();
         const { userId, message, type, date, isSeen = false } = data;
 
@@ -71,6 +107,7 @@ export async function POST(request: Request) {
                 userId: userIdObj,
                 type,
                 date,
+                tenantId: new ObjectId(tenantId)
             });
 
         if (existingNotification) {
@@ -99,6 +136,7 @@ export async function POST(request: Request) {
             type,
             date,
             isSeen,
+            tenantId: new ObjectId(tenantId),
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -117,8 +155,24 @@ export async function POST(request: Request) {
     }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const data = await request.json();
         const { notificationId, isSeen } = data;
 
@@ -143,7 +197,10 @@ export async function PUT(request: Request) {
             : notificationId;
 
         const result = await db.collection("notifications").updateOne(
-            { _id: notificationIdObj },
+            { 
+                _id: notificationIdObj,
+                tenantId: new ObjectId(tenantId)
+            },
             {
                 $set: {
                     isSeen,
@@ -154,7 +211,7 @@ export async function PUT(request: Request) {
 
         if (result.matchedCount === 0) {
             return NextResponse.json(
-                { error: "Notification not found" },
+                { error: "Notification not found in this company" },
                 { status: 404 }
             );
         }

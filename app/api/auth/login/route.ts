@@ -2,54 +2,49 @@ import {
      type NextRequest,
      NextResponse,
 } from "next/server";
-import { getUserByEmail } from "@/lib/mock-data";
-import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
+import { 
+     findTenantBySlug, 
+     findUserByEmailAndTenant, 
+     verifyPassword, 
+     generateJWT,
+     initializeDatabase,
+     bootstrapDefaultTenant 
+} from "@/lib/db";
+import { loadTenantMiddleware } from "@/lib/middleware";
 
 export async function POST(request: NextRequest) {
      try {
-          const { email, password } = await request.json();
+          // Initialize database and bootstrap default tenant on first request
+          await initializeDatabase();
+          await bootstrapDefaultTenant();
 
-          let user = null;
-          let userFound = false;
+          const { email, password, companyCode } = await request.json();
 
-          // First try to find user by email in database (prioritize database over mock data)
-          try {
-               const client = await clientPromise;
-               if (client) {
-                    const db = client.db("daily-report");
-                    const usersCol = db.collection("users");
-                    const dbUser = await usersCol.findOne({ email });
-
-                    if (dbUser) {
-                         // Ensure consistent ID format - prefer string ID if available, otherwise use ObjectId
-                         const userId = dbUser.id || dbUser._id?.toString();
-                         user = {
-                              id: userId,
-                              name: dbUser.name,
-                              email: dbUser.email,
-                              password: dbUser.password,
-                              role: dbUser.role,
-                              department: dbUser.department,
-                              phone: dbUser.phone,
-                              profileImage: dbUser.profileImage,
-                              createdAt: dbUser.createdAt,
-                         };
-                         userFound = true;
-                    }
-               }
-          } catch (dbError) {
-               console.warn("Database lookup failed:", dbError);
+          if (!email || !password || !companyCode) {
+               return NextResponse.json(
+                    {
+                         message: "Email, password, and company code are required",
+                    },
+                    { status: 400 }
+               );
           }
 
-          // Only fallback to mock data if database lookup failed or no user found
-          if (!userFound) {
-               user = getUserByEmail(email);
-               if (user) {
-                    userFound = true;
-               }
+          // Find tenant by company code
+          const tenant = await findTenantBySlug(companyCode);
+          if (!tenant) {
+               return NextResponse.json(
+                    {
+                         message: "Company not found",
+                    },
+                    { status: 404 }
+               );
           }
 
-          if (!userFound || !user || user.password !== password) {
+          // Find user by email and tenant
+          const user = await findUserByEmailAndTenant(email, tenant._id!);
+          
+          if (!user) {
                return NextResponse.json(
                     {
                          message: "Invalid email or password",
@@ -58,16 +53,35 @@ export async function POST(request: NextRequest) {
                );
           }
 
+          // Verify password
+          const isPasswordValid = await verifyPassword(password, user.password);
+          if (!isPasswordValid) {
+               return NextResponse.json(
+                    {
+                         message: "Invalid email or password",
+                    },
+                    { status: 401 }
+               );
+          }
+
+          // Generate JWT token
+          const token = generateJWT(user);
+
           // Remove password from response
           const { password: _, ...userWithoutPassword } = user;
-
-          // User data is already complete from database lookup
 
           return NextResponse.json({
                message: "Login successful",
                user: userWithoutPassword,
+               token,
+               tenant: {
+                    id: tenant._id?.toString(),
+                    name: tenant.name,
+                    slug: tenant.slug
+               }
           });
      } catch (error) {
+          console.error("Login error:", error);
           return NextResponse.json(
                { message: "Internal server error" },
                { status: 500 }

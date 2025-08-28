@@ -1,18 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { removeUserById, getUserById } from "@/lib/mock-data";
+import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middleware";
 
 export async function DELETE(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
+        // Authenticate admin user and get tenant info
+        const authResult = await adminAuthMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const userId = params.id;
         let userFound = false;
         let userRole = "";
 
-        // First check if user exists in database (prioritize database over mock data)
+        // Check if user exists in database and belongs to this tenant
         let dbUser = null;
         try {
             const client = await clientPromise;
@@ -20,12 +36,18 @@ export async function DELETE(
                 const db = client.db("daily-report");
                 const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
-                // Check if user exists in DB
+                // Check if user exists in DB and belongs to this tenant
                 if (ObjectId.isValid(userId)) {
-                    dbUser = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+                    dbUser = await db.collection("users").findOne({ 
+                        _id: new ObjectId(userId),
+                        tenantId: new ObjectId(tenantId)
+                    });
                 }
                 if (!dbUser) {
-                    dbUser = await db.collection("users").findOne({ id: userId });
+                    dbUser = await db.collection("users").findOne({ 
+                        id: userId,
+                        tenantId: new ObjectId(tenantId)
+                    });
                 }
 
                 if (dbUser) {
@@ -37,16 +59,23 @@ export async function DELETE(
                         return NextResponse.json({ error: "Cannot delete superadmin users" }, { status: 403 });
                     }
 
-                    // Delete all reports by this user
+                    // Delete all reports by this user in this tenant
                     await db.collection("reports").deleteMany({
-                        userId: { $in: [userIdObj, userId] }
+                        userId: { $in: [userIdObj, userId] },
+                        tenantId: new ObjectId(tenantId)
                     });
 
                     // Delete the user from database
                     if (ObjectId.isValid(userId)) {
-                        await db.collection("users").deleteOne({ _id: new ObjectId(userId) });
+                        await db.collection("users").deleteOne({ 
+                            _id: new ObjectId(userId),
+                            tenantId: new ObjectId(tenantId)
+                        });
                     } else {
-                        await db.collection("users").deleteOne({ id: userId });
+                        await db.collection("users").deleteOne({ 
+                            id: userId,
+                            tenantId: new ObjectId(tenantId)
+                        });
                     }
                 }
             }
@@ -54,30 +83,8 @@ export async function DELETE(
             console.warn("Database operation failed:", dbError);
         }
 
-        // Only check mock data if database lookup failed or no user found
         if (!userFound) {
-            const mockUser = getUserById(userId);
-            if (mockUser) {
-                userFound = true;
-                userRole = mockUser.role;
-
-                // Prevent deletion of superadmin users
-                if (mockUser.role === "superadmin") {
-                    return NextResponse.json({ error: "Cannot delete superadmin users" }, { status: 403 });
-                }
-            }
-        }
-
-        // Remove user from mock data
-        if (userFound) {
-            const removed = removeUserById(userId);
-            if (!removed) {
-                console.warn(`Failed to remove user ${userId} from mock data`);
-            }
-        }
-
-        if (!userFound) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
+            return NextResponse.json({ error: "User not found in this company" }, { status: 404 });
         }
 
         return NextResponse.json({

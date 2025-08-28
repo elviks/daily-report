@@ -29,7 +29,14 @@ export function ReportSubmission() {
   const checkTodaySubmission = async (selectedDate: string) => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}")
-      const response = await fetch(`/api/reports/check?date=${selectedDate}&userId=${user.id}`)
+      const userId = user._id || user.id;
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/reports/check?date=${selectedDate}&userId=${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
       const data = await response.json()
 
       if (data.exists) {
@@ -62,13 +69,14 @@ export function ReportSubmission() {
 
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}")
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/reports/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: user.id,
           date,
           content,
         }),

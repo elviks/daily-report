@@ -32,13 +32,26 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
 
     const fetchUserReports = async () => {
         try {
-            const response = await fetch(`/api/admin/reports/user/${userId}`)
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No authentication token found");
+                setReports([]);
+                return;
+            }
+
+            const response = await fetch(`/api/admin/reports/user/${userId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
             const data = await response.json()
 
             if (response.ok) {
                 const reports = Array.isArray(data.reports) ? data.reports : []
                 setReports(reports)
             } else {
+                console.error("Failed to fetch user reports:", data.error);
                 setReports([])
             }
         } catch (error) {

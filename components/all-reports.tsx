@@ -81,11 +81,13 @@ export function AllReports() {
                     return;
                }
 
+               const token = localStorage.getItem("token");
                const response = await fetch(
                     "/api/admin/reports",
                     {
                          headers: {
-                              "x-user-role": user.role
+                              "Authorization": `Bearer ${token}`,
+                              "Content-Type": "application/json"
                          }
                     }
                );

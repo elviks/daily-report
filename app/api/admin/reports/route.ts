@@ -1,68 +1,39 @@
-import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+import { findReportsByTenant } from "@/lib/db";
+import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middleware";
 
-export async function GET(request: Request) {
-     // CRITICAL: Check if user is admin
-     const headersList = headers();
-     const userRole = (await headersList).get("x-user-role");
-
-     if (userRole !== "superadmin") {
-          return NextResponse.json(
-               { error: "Access denied - admin only" },
-               { status: 403 }
-          );
-     }
+export async function GET(request: NextRequest) {
      try {
-          const client = await clientPromise;
-          if (!client) {
-               throw new Error("Database client is not available");
+          // Authenticate admin user and get tenant info
+          const authResult = await adminAuthMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
           }
-          const db = client.db("daily-report");
 
-          // Get reports with robust user join (handles string vs ObjectId userId)
-          const reports = await db
-               .collection("reports")
-               .aggregate([
-                    {
-                         $lookup: {
-                              from: "users",
-                              let: { uid: "$userId" },
-                              pipeline: [
-                                   {
-                                        $match: {
-                                             $expr: {
-                                                  $or: [
-                                                       { $eq: ["$_id", "$$uid"] },
-                                                       { $eq: [{ $toString: "$_id" }, "$$uid"] },
-                                                       { $eq: ["$id", "$$uid"] },
-                                                  ],
-                                             },
-                                        },
-                                   },
-                              ],
-                              as: "user",
-                         },
-                    },
-                    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-                    {
-                         $project: {
-                              id: "$_id",
-                              _id: 0,
-                              userId: 1,
-                              date: 1,
-                              content: 1,
-                              createdAt: 1,
-                              updatedAt: 1,
-                              userName: { $ifNull: ["$user.name", "Unknown User"] },
-                              userEmail: { $ifNull: ["$user.email", "unknown@example.com"] },
-                              department: { $ifNull: ["$user.department", "Unknown"] },
-                         },
-                    },
-               ])
-               .toArray();
+          const { request: authenticatedRequest } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
 
-          return NextResponse.json({ reports });
+          // Get reports for this specific tenant only
+          const reports = await findReportsByTenant(new ObjectId(tenantId));
+
+          return NextResponse.json({ 
+               reports: reports.map(report => ({
+                    id: report._id?.toString(),
+                    userId: report.userId?.toString(),
+                    date: report.date,
+                    content: report.content,
+                    createdAt: report.createdAt,
+                    updatedAt: report.updatedAt
+               }))
+          });
      } catch (error) {
           console.error("Error fetching reports:", error);
           return NextResponse.json({ reports: [] }, { status: 500 });

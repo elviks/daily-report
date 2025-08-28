@@ -38,12 +38,23 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const userData = localStorage.getItem("user")
     if (userData) {
       const parsedUser = JSON.parse(userData)
-      if (parsedUser.role !== "superadmin") {
+      console.log("AdminLayout - User data:", parsedUser)
+      console.log("AdminLayout - User role:", parsedUser.role)
+      console.log("AdminLayout - User isAdmin:", parsedUser.isAdmin)
+      
+      const isAdminUser = parsedUser.isAdmin || parsedUser.role === "superadmin" || parsedUser.role === "admin"
+      console.log("AdminLayout - Is admin user:", isAdminUser)
+      
+      if (!isAdminUser) {
+        console.log("AdminLayout - Redirecting to dashboard (not admin)")
         router.push("/dashboard")
         return
       }
+      
+      console.log("AdminLayout - Setting user (admin access granted)")
       setUser(parsedUser)
     } else {
+      console.log("AdminLayout - No user data, redirecting to login")
       router.push("/")
     }
   }, [router])
@@ -94,7 +105,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                    <p className="text-xs leading-none text-red-600 font-medium">SuperAdmin</p>
+                    <p className="text-xs leading-none text-red-600 font-medium">
+                      {user.role === "superadmin" ? "SuperAdmin" : user.role === "admin" ? "Admin" : "User"}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

@@ -1,12 +1,29 @@
 import { type NextRequest, NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware"
 
 export async function GET(
     request: NextRequest,
     { params }: { params: { userId: string; date: string } }
 ) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest, user } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const { userId, date } = params
         console.log("API: Fetching report for userId:", userId, "date:", date)
 
@@ -38,7 +55,8 @@ export async function GET(
                 .collection("reports")
                 .findOne({
                     userId: userIdObj,
-                    date: date
+                    date: date,
+                    tenantId: new ObjectId(tenantId)
                 });
 
             if (!report) {

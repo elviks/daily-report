@@ -1,23 +1,40 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
      try {
+          // Authenticate user and get tenant info
+          const authResult = await authMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
+          }
+
+          const { request: authenticatedRequest, user } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
+
           const data = await request.json();
 
           // Validate incoming data
-          if (!data.userId || !data.content || !data.date) {
+          if (!data.content || !data.date) {
                return NextResponse.json(
                     {
-                         error: "Missing required fields: userId, date or content",
+                         error: "Missing required fields: date or content",
                     },
                     { status: 400 }
                );
           }
 
-          // Prepare identifiers
-          const originalUserId: string = data.userId;
+          // Use the authenticated user's ID from the token
+          const originalUserId: string = user.uid;
           const normalizedDate: string = data.date;
 
           // Convert userId to ObjectId if it's valid, otherwise keep as string (for MongoDB queries)
@@ -36,6 +53,7 @@ export async function POST(request: Request) {
                     const existing = await reportsCol.findOne({
                          userId: mongoUserId,
                          date: normalizedDate,
+                         tenantId: new ObjectId(tenantId)
                     });
 
                     if (existing) {
@@ -51,6 +69,7 @@ export async function POST(request: Request) {
                          userId: mongoUserId,
                          content: data.content,
                          date: normalizedDate,
+                         tenantId: new ObjectId(tenantId),
                          createdAt: new Date(),
                          updatedAt: new Date(),
                     });

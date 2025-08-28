@@ -1,13 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { getReportsByUserId } from "@/lib/mock-data";
+import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middleware";
 
 export async function GET(
-     _request: Request,
+     request: NextRequest,
      { params }: { params: { userId: string } }
 ) {
      try {
+          // Authenticate admin user and get tenant info
+          const authResult = await adminAuthMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
+          }
+
+          const { request: authenticatedRequest } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
+
           const client = await clientPromise;
           if (client) {
                const db = client.db("daily-report");
@@ -15,11 +31,17 @@ export async function GET(
                const userIdObj = ObjectId.isValid(userId)
                     ? new ObjectId(userId)
                     : userId;
+               
+               // Filter reports by both userId and tenantId
                const reports = await db
                     .collection("reports")
-                    .find({ userId: userIdObj })
+                    .find({ 
+                         userId: userIdObj,
+                         tenantId: new ObjectId(tenantId)
+                    })
                     .sort({ date: -1 })
                     .toArray();
+               
                return NextResponse.json({
                     reports: Array.isArray(reports)
                          ? reports.map((report: any) => ({
@@ -30,9 +52,8 @@ export async function GET(
                          : [],
                });
           }
-          // Fallback to mock data if client not available
-          const fallbackReports = getReportsByUserId(params.userId) || [];
-          return NextResponse.json({ reports: fallbackReports });
+          
+          return NextResponse.json({ reports: [] });
      } catch (error) {
           console.error(error);
           return NextResponse.json(

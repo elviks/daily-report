@@ -1,53 +1,42 @@
-import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import { users, addUser, getUserByEmail } from "@/lib/mock-data";
+import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+import { findUsersByTenant, createUser, hashPassword, findUserByEmailAndTenant } from "@/lib/db";
+import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middleware";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
      try {
-          const client = await clientPromise;
-          if (!client) {
-               throw new Error("Database client is not available");
+          // Authenticate admin user and get tenant info
+          const authResult = await adminAuthMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
           }
-          const db = client.db("daily-report");
 
-          // Fix any existing users with "superadmin" role
-          try {
-               const result = await db.collection("users").updateMany(
-                    { role: "superadmin" },
-                    { $set: { role: "user" } }
+          const { request: authenticatedRequest } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
                );
-               if (result.modifiedCount > 0) {
-                    console.log(`Fixed ${result.modifiedCount} users with superadmin role`);
-               }
-          } catch (fixError) {
-               console.warn("Could not fix existing superadmin users:", fixError);
           }
 
-          const users = await db
-               .collection("users")
-               .aggregate([
-                    {
-                         $project: {
-                              _id: 0,
-                              id: { $ifNull: ["$id", { $toString: "$_id" }] },
-                              name: 1,
-                              email: 1,
-                              role: {
-                                   $cond: {
-                                        if: { $in: ["$role", ["user", "admin"]] },
-                                        then: "$role",
-                                        else: "user"
-                                   }
-                              },
-                              department: { $ifNull: ["$department", ""] },
-                              phone: { $ifNull: ["$phone", ""] },
-                              profileImage: { $ifNull: ["$profileImage", ""] },
-                              createdAt: { $ifNull: ["$createdAt", new Date()] },
-                         },
-                    },
-               ])
-               .toArray();
-          return NextResponse.json({ users });
+          // Get users for this specific tenant only
+          const users = await findUsersByTenant(new ObjectId(tenantId));
+
+          return NextResponse.json({ 
+               users: users.map(user => ({
+                    id: user._id?.toString(),
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    department: user.department,
+                    phone: user.phone,
+                    profileImage: user.profileImage,
+                    isAdmin: user.isAdmin,
+                    createdAt: user.createdAt
+               }))
+          });
      } catch (error) {
           console.error("Error fetching users:", error);
           return NextResponse.json(
@@ -57,8 +46,24 @@ export async function GET() {
      }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
      try {
+          // Authenticate admin user and get tenant info
+          const authResult = await adminAuthMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
+          }
+
+          const { request: authenticatedRequest } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
+
           const { name, email, password, department, phone, role } = await request.json();
 
           // Debug logging
@@ -72,110 +77,65 @@ export async function POST(request: Request) {
                );
           }
 
-          // Ensure role is set to "user" by default, not "superadmin"
-          const userRole = role === "admin" ? "admin" : "user";
+          // Get the current user's role to determine what roles they can assign
+          const currentUser = authResult.user;
+          console.log("Current user role:", currentUser.role);
+          
+          // Determine the role to assign based on current user's permissions
+          let userRole = "user"; // default
+          
+          if (currentUser.role === "superadmin") {
+               // Superadmin can assign any role
+               if (role === "superadmin") {
+                    userRole = "superadmin";
+               } else if (role === "admin") {
+                    userRole = "superadmin"; // When adding admin, set as superadmin
+               } else {
+                    userRole = "user";
+               }
+          } else if (currentUser.role === "admin") {
+               // Admin can only assign user or admin roles
+               if (role === "admin") {
+                    userRole = "admin";
+               } else {
+                    userRole = "user";
+               }
+          }
+          
           console.log("Final role assignment:", userRole);
 
-          // Check if user already exists in mock data
-          const existingUser = getUserByEmail(email);
+
+
+          // Check if user already exists in this tenant
+          const existingUser = await findUserByEmailAndTenant(email, new ObjectId(tenantId));
           if (existingUser) {
                return NextResponse.json(
-                    { error: "User with this email already exists" },
+                    { error: "User with this email already exists in this company" },
                     { status: 409 }
                );
           }
 
+          // Create new user for this tenant
+          const newUser = await createUser({
+               email,
+               password: hashPassword(password),
+               name,
+               role: userRole,
+               department,
+               phone: phone || "",
+               profileImage: "",
+               isAdmin: userRole === "admin" || userRole === "superadmin",
+               tenantId: new ObjectId(tenantId),
+               isActive: true
+          });
 
+          // Return user without password
+          const { password: _, ...userWithoutPassword } = newUser;
 
-          // Try to persist to MongoDB if configured
-          try {
-               const client = await clientPromise;
-               if (client) {
-                    const db = client.db("daily-report");
-                    const usersCol = db.collection("users");
-
-                    // Check if user already exists in DB
-                    const existingDbUser = await usersCol.findOne({ email });
-                    if (existingDbUser) {
-                         // Remove from mock data since DB already has this user
-                         const { removeUserByEmail } = await import("@/lib/mock-data");
-                         removeUserByEmail(email);
-
-                         return NextResponse.json(
-                              { error: "User with this email already exists in database" },
-                              { status: 409 }
-                         );
-                    }
-
-                    // Generate unique ID for database
-                    const existingUsers = await usersCol.find({}).toArray();
-                    const existingIds = existingUsers.map(u => parseInt(u.id || "0")).sort((a, b) => a - b);
-                    let newId = 1;
-
-                    for (const id of existingIds) {
-                         if (id === newId) {
-                              newId++;
-                         } else {
-                              break;
-                         }
-                    }
-
-                    const uniqueId = newId.toString();
-                    console.log("Creating user with unique ID:", uniqueId);
-
-                    // Insert new user with unique database ID
-                    const userToInsert = {
-                         id: uniqueId,
-                         name,
-                         email,
-                         password, // In production, this should be hashed
-                         role: userRole, // Use the properly assigned role
-                         department,
-                         phone: phone || "",
-                         profileImage: "",
-                         createdAt: new Date(),
-                    };
-
-                    console.log("Inserting user with role:", userToInsert.role);
-                    await usersCol.insertOne(userToInsert);
-
-                    // Return user with database-generated ID
-                    const userWithoutPassword = {
-                         id: uniqueId,
-                         name,
-                         email,
-                         role: userRole, // Use the properly assigned role
-                         department,
-                         phone: phone || "",
-                         profileImage: "",
-                         createdAt: new Date().toISOString(),
-                    };
-
-                    return NextResponse.json({
-                         message: "User created successfully",
-                         user: userWithoutPassword,
-                    }, { status: 201 });
-               }
-          } catch (dbError) {
-               console.warn("Failed to persist user to database:", dbError);
-               // Fallback to mock data only if database fails
-               const newUser = addUser({
-                    name,
-                    email,
-                    password, // In production, this should be hashed
-                    role: userRole, // Use the properly assigned role
-                    department,
-                    phone: phone || "",
-                    profileImage: "",
-                    createdAt: new Date().toISOString(),
-               });
-
-               const { password: _, ...userWithoutPassword } = newUser;
-               return NextResponse.json({
-                    message: "User created successfully (mock data only)",
-                    user: userWithoutPassword,
-               }, { status: 201 });
-          }
+          return NextResponse.json({
+               message: "User created successfully",
+               user: userWithoutPassword,
+          }, { status: 201 });
 
      } catch (error) {
           console.error("Error creating user:", error);

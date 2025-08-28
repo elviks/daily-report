@@ -42,16 +42,26 @@ export function ProfileForm() {
       const localUser = JSON.parse(userData)
 
       try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No authentication token found");
+          return;
+        }
+
+        const userId = localUser._id || localUser.id;
         const resp = await fetch("/api/profile", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: localUser.id, email: localUser.email })
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ id: userId, email: localUser.email })
         })
         if (resp.ok) {
           const data = await resp.json()
           const dbUser = data.user
           const merged = {
-            id: dbUser?.id || localUser.id,
+            id: dbUser?.id || userId,
             name: dbUser?.name || localUser.name,
             email: dbUser?.email || localUser.email,
             phone: dbUser?.phone || localUser.phone || "",
@@ -66,7 +76,7 @@ export function ProfileForm() {
         } else {
           // fallback to local
           setProfile({
-            id: localUser.id,
+            id: userId,
             name: localUser.name,
             email: localUser.email,
             phone: localUser.phone || "",
@@ -78,7 +88,7 @@ export function ProfileForm() {
       } catch {
         // ignore; fallback to local
         setProfile({
-          id: localUser.id,
+          id: userId,
           name: localUser.name,
           email: localUser.email,
           phone: localUser.phone || "",
@@ -138,10 +148,17 @@ export function ProfileForm() {
     }
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("No authentication token found. Please log in again.");
+        return;
+      }
+
       const response = await fetch("/api/profile/update", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...profile,

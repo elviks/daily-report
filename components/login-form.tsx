@@ -22,6 +22,7 @@ import { Loader2, Mail, Lock, Sparkles } from "lucide-react";
 export function LoginForm() {
      const [email, setEmail] = useState("");
      const [password, setPassword] = useState("");
+     const [companyCode, setCompanyCode] = useState("");
      const [isLoading, setIsLoading] = useState(false);
      const [error, setError] = useState("");
      const router = useRouter();
@@ -43,6 +44,7 @@ export function LoginForm() {
                          body: JSON.stringify({
                               email,
                               password,
+                              companyCode,
                          }),
                     }
                );
@@ -50,16 +52,34 @@ export function LoginForm() {
                const data = await response.json();
 
                if (response.ok) {
+                    console.log("Login response data:", data);
+                    console.log("User data:", data.user);
+                    console.log("User role:", data.user.role);
+                    console.log("User isAdmin:", data.user.isAdmin);
+                    
                     // Store user data in localStorage (in production, use proper session management)
                     localStorage.setItem(
                          "user",
                          JSON.stringify(data.user)
                     );
+                    localStorage.setItem(
+                         "token",
+                         data.token
+                    );
+                    localStorage.setItem(
+                         "tenant",
+                         JSON.stringify(data.tenant)
+                    );
 
-                    // Redirect based on role
-                    if (data.user.role === "superadmin") {
+                    // Redirect based on role and admin status
+                    const isAdminUser = data.user.isAdmin || data.user.role === "superadmin" || data.user.role === "admin";
+                    console.log("Is admin user:", isAdminUser);
+                    
+                    if (isAdminUser) {
+                         console.log("Redirecting to admin panel");
                          router.push("/admin");
                     } else {
+                         console.log("Redirecting to dashboard");
                          router.push("/dashboard");
                     }
                } else {
@@ -120,6 +140,35 @@ export function LoginForm() {
                                    </AlertDescription>
                               </Alert>
                          )}
+
+                         <div className="space-y-3">
+                              <Label
+                                   htmlFor="companyCode"
+                                   className="text-slate-700 font-semibold text-sm uppercase tracking-wide"
+                              >
+                                   Company Code
+                              </Label>
+                              <div className="relative group">
+                                   <svg className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                   </svg>
+                                   <Input
+                                        id="companyCode"
+                                        type="text"
+                                        placeholder="Enter your company code"
+                                        value={companyCode}
+                                        onChange={(e) =>
+                                             setCompanyCode(
+                                                  e.target
+                                                       .value
+                                             )
+                                        }
+                                        required
+                                        className="pl-12 h-14 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 rounded-xl text-base bg-white/80 backdrop-blur-sm hover:bg-white focus:bg-white"
+                                   />
+                                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-blue-500/0 to-blue-500/0 group-focus-within:from-blue-500/5 group-focus-within:via-blue-500/10 group-focus-within:to-purple-500/5 transition-all duration-500 pointer-events-none"></div>
+                              </div>
+                         </div>
 
                          <div className="space-y-3">
                               <Label

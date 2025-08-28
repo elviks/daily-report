@@ -29,11 +29,24 @@ export function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/admin/stats")
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
+      const response = await fetch("/api/admin/stats", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
       const data = await response.json()
 
       if (response.ok) {
         setStats(data.stats)
+      } else {
+        console.error("Failed to fetch stats:", data.error);
       }
     } catch (error) {
       console.error("Error fetching stats:", error)

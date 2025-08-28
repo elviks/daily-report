@@ -1,31 +1,55 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getUserById, getUserByEmail } from "@/lib/mock-data";
+import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
+        // Authenticate user and get tenant info
+        const authResult = await authMiddleware(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
+        }
+
+        const { request: authenticatedRequest, user } = authResult;
+        const tenantId = getTenantIdFromRequest(authenticatedRequest);
+        
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: "Tenant information not found" },
+                { status: 400 }
+            );
+        }
+
         const { id, email } = await request.json();
         if (!id && !email) {
             return NextResponse.json({ error: "Missing id or email" }, { status: 400 });
         }
 
-        let user = null;
+        let userData = null;
         let userFound = false;
 
-        // First try to find user in database (prioritize database over mock data)
+        // Find user in database within the same tenant
         try {
             const client = await clientPromise;
             if (client) {
                 const db = client.db("daily-report");
                 const users = db.collection("users");
-                const dbUser = await users.findOne({ $or: [{ id }, { email }] });
+                
+                let query = { tenantId: new ObjectId(tenantId) };
+                if (id) {
+                    query = { ...query, $or: [{ id }, { _id: ObjectId.isValid(id) ? new ObjectId(id) : null }] };
+                } else if (email) {
+                    query = { ...query, email };
+                }
+
+                const dbUser = await users.findOne(query);
 
                 if (dbUser) {
-                    user = {
-                        id: dbUser.id || dbUser._id?.toString(),
+                    userData = {
+                        id: dbUser._id?.toString(),
                         name: dbUser.name,
                         email: dbUser.email,
-                        password: dbUser.password,
                         role: dbUser.role,
                         department: dbUser.department,
                         phone: dbUser.phone,
@@ -39,26 +63,11 @@ export async function POST(request: Request) {
             console.warn("Database lookup failed:", dbError);
         }
 
-        // Only fallback to mock data if database lookup failed or no user found
-        if (!userFound) {
-            if (id) {
-                user = getUserById(id);
-            } else if (email) {
-                user = getUserByEmail(email);
-            }
-
-            if (user) {
-                userFound = true;
-            }
-        }
-
-        if (!userFound || !user) {
+        if (!userFound || !userData) {
             return NextResponse.json({ user: null }, { status: 404 });
         }
 
-        // Return user without password
-        const { password: _, ...userWithoutPassword } = user;
-        return NextResponse.json({ user: userWithoutPassword });
+        return NextResponse.json({ user: userData });
 
     } catch (error) {
         console.error("Error fetching profile:", error);

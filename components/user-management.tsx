@@ -45,11 +45,24 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users")
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
+      const response = await fetch("/api/admin/users", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
       const data = await response.json()
 
       if (response.ok) {
         setUsers(data.users)
+      } else {
+        console.error("Failed to fetch users:", data.error);
       }
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -83,8 +96,18 @@ export function UserManagement() {
 
     setDeleting(true)
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
       const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       })
 
       if (response.ok) {

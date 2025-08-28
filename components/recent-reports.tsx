@@ -36,15 +36,22 @@ export function RecentReports() {
   const fetchReports = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}")
-      console.log("Fetching reports for user:", user.id, "User object:", user)
+      console.log("Fetching reports for user:", user._id || user.id, "User object:", user)
 
-      if (!user.id) {
+      const userId = user._id || user.id;
+      if (!userId) {
         console.error("No user ID found in localStorage")
         setReports([])
         return
       }
 
-      const response = await fetch(`/api/reports/user/${user.id}`)
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/reports/user/${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
       const data = await response.json()
 
       if (response.ok) {

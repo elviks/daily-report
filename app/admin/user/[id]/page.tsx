@@ -37,7 +37,19 @@ export default function UserPage() {
 
     const fetchUser = async () => {
         try {
-            const response = await fetch("/api/admin/users")
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("No authentication token found");
+                router.push("/admin");
+                return;
+            }
+
+            const response = await fetch("/api/admin/users", {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
             const data = await response.json()
 
             if (response.ok) {
@@ -48,6 +60,7 @@ export default function UserPage() {
                     router.push("/admin")
                 }
             } else {
+                console.error("Failed to fetch users:", data.error);
                 router.push("/admin")
             }
         } catch (error) {

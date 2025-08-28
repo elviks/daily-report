@@ -36,10 +36,17 @@ export function AddTeamMember({ onUserAdded }: AddTeamMemberProps) {
         setMessage("")
 
         try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setError("No authentication token found. Please log in again.");
+                return;
+            }
+
             const response = await fetch("/api/admin/users", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify(formData),
             })

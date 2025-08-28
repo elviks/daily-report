@@ -1,9 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
      try {
+          // Authenticate user and get tenant info
+          const authResult = await authMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
+          }
+
+          const { request: authenticatedRequest, user } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
+
           const { searchParams } = new URL(request.url);
           const userId = searchParams.get('userId');
           const date = searchParams.get('date');
@@ -27,7 +44,11 @@ export async function GET(request: Request) {
           // Convert userId to ObjectId if it's valid, otherwise keep as string
           const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
-          const report = await db.collection("reports").findOne({ userId: userIdObj, date });
+          const report = await db.collection("reports").findOne({ 
+               userId: userIdObj, 
+               date,
+               tenantId: new ObjectId(tenantId)
+          });
 
           return NextResponse.json({ exists: !!report, report: report || null });
      } catch (error) {
@@ -36,8 +57,24 @@ export async function GET(request: Request) {
      }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
      try {
+          // Authenticate user and get tenant info
+          const authResult = await authMiddleware(request);
+          if (authResult instanceof NextResponse) {
+               return authResult;
+          }
+
+          const { request: authenticatedRequest, user } = authResult;
+          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          
+          if (!tenantId) {
+               return NextResponse.json(
+                    { error: "Tenant information not found" },
+                    { status: 400 }
+               );
+          }
+
           const { userId, date } = await request.json();
 
           const client = await clientPromise;
@@ -52,7 +89,11 @@ export async function POST(request: Request) {
           // Convert userId to ObjectId if it's valid, otherwise keep as string
           const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
 
-          const report = await db.collection("reports").findOne({ userId: userIdObj, date });
+          const report = await db.collection("reports").findOne({ 
+               userId: userIdObj, 
+               date,
+               tenantId: new ObjectId(tenantId)
+          });
 
           return NextResponse.json({ exists: !!report, report: report || null });
      } catch (error) {
