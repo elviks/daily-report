@@ -4,13 +4,16 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, Check, X, Calendar, Users, FileText, Clock, User } from "lucide-react"
+import { TextWithLinks } from "@/components/ui/text-with-links"
 
 interface User {
     id: string
+    _id?: string
     name: string
     email: string
     role: string
     department: string
+    isAdmin?: boolean
 }
 
 interface Report {
@@ -63,7 +66,11 @@ export function WorkCalendar() {
             const reportsData = await reportsResponse.json();
 
             if (usersData.users) {
-                setUsers(usersData.users);
+                // Filter out admin users, only show regular users
+                const regularUsers = usersData.users.filter((user: User) => 
+                    user.role === 'user' || (!user.role && !user.isAdmin)
+                );
+                setUsers(regularUsers);
             }
 
             if (reportsData.reports) {
@@ -431,7 +438,7 @@ export function WorkCalendar() {
                                     Daily Report Content
                                 </h3>
                                 <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                                    <p className="text-gray-800 whitespace-pre-wrap">{selectedReport.content}</p>
+                                    <p className="text-gray-800 whitespace-pre-wrap"><TextWithLinks text={selectedReport.content} /></p>
                                 </div>
                             </div>
                         </div>

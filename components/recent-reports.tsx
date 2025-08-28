@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Calendar, FileText, Eye, Clock, TrendingUp, CheckCircle } from "lucide-react"
+import { TextWithLinks } from "@/components/ui/text-with-links"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
@@ -221,7 +222,7 @@ export function RecentReports() {
                     {/* Report Content Preview */}
                     <div className="relative">
                       <p className="text-slate-700 leading-relaxed mb-4 line-clamp-3 group-hover:line-clamp-none transition-all duration-300">
-                        {report.content}
+                        <TextWithLinks text={report.content} />
                       </p>
 
                       {/* Content Stats */}
@@ -277,7 +278,7 @@ export function RecentReports() {
           <div className="mt-6 p-6 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl border border-slate-200/50 max-h-[60vh] overflow-y-auto">
             <div className="prose prose-slate max-w-none">
               <p className="whitespace-pre-wrap text-slate-800 leading-relaxed text-base">
-                {selectedReport?.content}
+                {selectedReport ? <TextWithLinks text={selectedReport.content} /> : ''}
               </p>
             </div>
           </div>

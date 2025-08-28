@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Shield, LogOut, Bell, Users, BarChart3 } from "lucide-react"
+import { Shield, LogOut, Bell, Users, BarChart3, User } from "lucide-react"
 import Link from "next/link"
 
 interface User {
@@ -82,14 +82,23 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-
-              <div className="text-center">
+            <div className="flex items-center space-x-8">
+              <Link href="/admin" className="text-center">
                 <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-gray-500/10 to-gray-500/10 rounded-2xl border border-purple-200/50">
                   <BarChart3 className="w-6 h-6 text-gray-600 mr-2" />
                   <span className="text-gray-700 font-semibold">Admin Dashboard</span>
                 </div>
-              </div>
+              </Link>
+              
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link 
+                  href="/admin/profile" 
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </Link>
+              </nav>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -111,6 +120,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>

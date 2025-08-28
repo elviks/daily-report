@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, CheckCircle, XCircle, FileText, Clock, User } from "lucide-react"
 import { isWorkingDay } from "@/lib/utils"
+import { TextWithLinks } from "@/components/ui/text-with-links"
 
 interface UserCalendarProps {
     userId: string
@@ -390,7 +391,7 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                                 </div>
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <div className="whitespace-pre-wrap text-gray-800 font-light leading-relaxed">
-                                        {selectedReport.content}
+                                        <TextWithLinks text={selectedReport.content} />
                                     </div>
                                 </div>
                             </div>

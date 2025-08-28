@@ -25,6 +25,7 @@ import {
      Calendar,
      User,
 } from "lucide-react";
+import { TextWithLinks } from "@/components/ui/text-with-links";
 
 interface Report {
      id: string;
@@ -76,7 +77,7 @@ export function AllReports() {
                }
 
                const user = JSON.parse(userData);
-               if (user.role !== "superadmin") {
+               if (user.role !== "superadmin" && user.role !== "admin") {
                     setError("Access denied - admin only");
                     return;
                }
@@ -327,9 +328,7 @@ export function AllReports() {
 
                                                   <div className="text-sm">
                                                        <p className="line-clamp-3">
-                                                            {
-                                                                 report.content
-                                                            }
+                                                            <TextWithLinks text={report.content} />
                                                        </p>
                                                   </div>
 

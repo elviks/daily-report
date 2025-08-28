@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Bell, AlertTriangle } from "lucide-react";
+import { TextWithLinks } from "@/components/ui/text-with-links";
 
 export default function NotificationsAdminPage() {
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -142,7 +143,7 @@ export default function NotificationsAdminPage() {
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-600 line-clamp-2">
-                                            {report.content}
+                                            <TextWithLinks text={report.content} />
                                         </p>
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
                                             <span>User ID: {report.userId}</span>

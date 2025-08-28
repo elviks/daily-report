@@ -7,7 +7,7 @@ export default function AdminPage() {
     <AdminLayout>
       <div className="space-y-8">
         <AdminDashboard />
-        <AdminTest />
+
       </div>
     </AdminLayout>
   )

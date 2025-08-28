@@ -70,6 +70,27 @@ export function getAllowedDatesMessage(): string {
   return `You can submit reports for: Today (${allowedDates.today}) and Yesterday (${allowedDates.yesterday}).`
 }
 
+// URL regex pattern to detect various types of links
+const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[^\s]+\.[^\s]+)/gi
+
+// Function to detect if a string contains URLs
+export function containsUrls(text: string): boolean {
+  if (!text) return false
+  return urlRegex.test(text)
+}
+
+// Function to extract URLs from text
+export function extractUrls(text: string): string[] {
+  if (!text) return []
+  const matches = text.match(urlRegex) || []
+  return matches.map(url => {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url
+    }
+    return url
+  })
+}
+
 /**
  * Check if a date is a working day (Monday to Friday)
  */
