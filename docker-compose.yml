@@ -1,0 +1,24 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        - MONGODB_URI=mongodb://db:27017/dailyreport
+    ports:
+      - "3016:3016"
+    environment:
+      - PORT=3016
+      - MONGODB_URI=mongodb://db:27017/dailyreport
+    depends_on:
+      - db
+
+  db:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./backups:/data/backup
+
+volumes:
+  mongo-data:
