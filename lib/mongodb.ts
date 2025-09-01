@@ -22,47 +22,28 @@ if (uri) {
           // Remove any line breaks or extra spaces
           cleanUri = cleanUri.replace(/\s+/g, '');
 
-          // Ensure the URI has the database name
-          if (!cleanUri.includes('/daily-report')) {
+          // Ensure the URI has the database name if needed
+          if (!cleanUri.includes('/dailyreport') && !cleanUri.includes('/daily-report')) {
                // Parse the URI to properly add database name
                const url = new URL(cleanUri);
                if (!url.pathname || url.pathname === '/') {
-                    url.pathname = '/daily-report';
+                    url.pathname = '/dailyreport';
                }
-
-               // Add SSL configuration for MongoDB Atlas
-               if (url.hostname.includes('mongodb.net')) {
-                    // MongoDB Atlas - configure SSL properly
-                    url.searchParams.set('ssl', 'true');
-                    url.searchParams.set('tls', 'true');
-                    url.searchParams.set('tlsAllowInvalidCertificates', 'true');
-                    url.searchParams.set('tlsAllowInvalidHostnames', 'true');
-                    url.searchParams.set('retryWrites', 'true');
-                    url.searchParams.set('w', 'majority');
-                    url.searchParams.set('directConnection', 'false');
-               }
-
                cleanUri = url.toString();
           }
 
           console.log("🔧 Cleaned MongoDB URI:", cleanUri.substring(0, 50) + '...');
 
-          if (process.env.NODE_ENV === "development") {
-               if (!global._mongoClientPromise) {
-                    client = new MongoClient(cleanUri, {
-                         ssl: true,
-                         tls: true,
-                         tlsAllowInvalidCertificates: true,
-                         tlsAllowInvalidHostnames: true,
-                         retryWrites: true,
-                         w: 'majority',
-                         directConnection: false
-                    });
-                    global._mongoClientPromise = client.connect();
-               }
-               clientPromise = global._mongoClientPromise;
-          } else {
-               client = new MongoClient(cleanUri, {
+          // Check if this is MongoDB Atlas (cloud) or local MongoDB
+          const isAtlas = cleanUri.includes('mongodb.net') || cleanUri.includes('mongodb+srv');
+          const isLocal = cleanUri.includes('localhost') || cleanUri.includes('127.0.0.1') || cleanUri.includes('db:27017');
+
+          // Configure connection options based on MongoDB type
+          let connectionOptions: any = {};
+
+          if (isAtlas) {
+               // MongoDB Atlas configuration
+               connectionOptions = {
                     ssl: true,
                     tls: true,
                     tlsAllowInvalidCertificates: true,
@@ -70,7 +51,35 @@ if (uri) {
                     retryWrites: true,
                     w: 'majority',
                     directConnection: false
-               });
+               };
+               console.log("🌐 Detected MongoDB Atlas connection");
+          } else if (isLocal) {
+               // Local MongoDB configuration (no SSL)
+               connectionOptions = {
+                    ssl: false,
+                    tls: false,
+                    retryWrites: true,
+                    w: 'majority',
+                    directConnection: false
+               };
+               console.log("🏠 Detected local MongoDB connection");
+          } else {
+               // Default configuration for other cases
+               connectionOptions = {
+                    retryWrites: true,
+                    w: 'majority'
+               };
+               console.log("🔧 Using default MongoDB connection options");
+          }
+
+          if (process.env.NODE_ENV === "development") {
+               if (!global._mongoClientPromise) {
+                    client = new MongoClient(cleanUri, connectionOptions);
+                    global._mongoClientPromise = client.connect();
+               }
+               clientPromise = global._mongoClientPromise;
+          } else {
+               client = new MongoClient(cleanUri, connectionOptions);
                clientPromise = client.connect();
           }
 
