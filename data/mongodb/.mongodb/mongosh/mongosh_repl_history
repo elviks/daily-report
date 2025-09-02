@@ -1,0 +1,3 @@
+exit
+docker exec daily-report-db-1 mongosh --username admin --password SecurePassword123 --authenticationDatabase admin --eval "show dbs;"
+docker exec daily-report-db-1 mongosh --username admin --password SecurePassword123 --authenticationDatabase admin --eval "show dbs"

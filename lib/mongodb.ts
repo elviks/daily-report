@@ -50,26 +50,53 @@ if (uri) {
                     tlsAllowInvalidHostnames: true,
                     retryWrites: true,
                     w: 'majority',
-                    directConnection: false
+                    directConnection: false,
+                    maxPoolSize: 10,
+                    minPoolSize: 1,
+                    maxIdleTimeMS: 30000,
+                    serverSelectionTimeoutMS: 5000,
+                    socketTimeoutMS: 45000,
+                    connectTimeoutMS: 10000
                };
                console.log("🌐 Detected MongoDB Atlas connection");
           } else if (isLocal) {
-               // Local MongoDB configuration (no SSL)
+               // Local MongoDB configuration with security
                connectionOptions = {
                     ssl: false,
                     tls: false,
                     retryWrites: true,
                     w: 'majority',
-                    directConnection: false
+                    directConnection: false,
+                    maxPoolSize: 10,
+                    minPoolSize: 1,
+                    maxIdleTimeMS: 30000,
+                    serverSelectionTimeoutMS: 5000,
+                    socketTimeoutMS: 45000,
+                    connectTimeoutMS: 10000,
+                    // Security options for local MongoDB
+                    authSource: 'admin',
+                    authMechanism: 'SCRAM-SHA-256'
                };
-               console.log("🏠 Detected local MongoDB connection");
+               console.log("🏠 Detected local MongoDB connection with authentication");
           } else {
                // Default configuration for other cases
                connectionOptions = {
                     retryWrites: true,
-                    w: 'majority'
+                    w: 'majority',
+                    maxPoolSize: 10,
+                    minPoolSize: 1,
+                    maxIdleTimeMS: 30000,
+                    serverSelectionTimeoutMS: 5000,
+                    socketTimeoutMS: 45000,
+                    connectTimeoutMS: 10000
                };
                console.log("🔧 Using default MongoDB connection options");
+          }
+
+          // Security validation
+          if (!cleanUri.includes('@') && !isAtlas) {
+               console.warn("⚠️  WARNING: MongoDB connection string does not include authentication credentials!");
+               console.warn("⚠️  This could expose your database to unauthorized access!");
           }
 
           if (process.env.NODE_ENV === "development") {
