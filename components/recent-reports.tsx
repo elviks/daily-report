@@ -221,9 +221,9 @@ export function RecentReports() {
 
                     {/* Report Content Preview */}
                     <div className="relative">
-                      <p className="text-slate-700 leading-relaxed mb-4 line-clamp-3 group-hover:line-clamp-none transition-all duration-300">
+                      <div className="text-slate-700 leading-relaxed mb-4 line-clamp-3 group-hover:line-clamp-none transition-all duration-300">
                         <TextWithLinks text={report.content} />
-                      </p>
+                      </div>
 
                       {/* Content Stats */}
                       <div className="flex items-center justify-between text-sm text-slate-500">
@@ -277,9 +277,9 @@ export function RecentReports() {
 
           <div className="mt-6 p-6 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl border border-slate-200/50 max-h-[60vh] overflow-y-auto">
             <div className="prose prose-slate max-w-none">
-              <p className="whitespace-pre-wrap text-slate-800 leading-relaxed text-base">
+              <div className="text-slate-800 leading-relaxed text-base font-mono">
                 {selectedReport ? <TextWithLinks text={selectedReport.content} /> : ''}
-              </p>
+              </div>
             </div>
           </div>
 

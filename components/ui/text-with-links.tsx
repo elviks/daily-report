@@ -64,5 +64,5 @@ export function TextWithLinks({ text, className = "" }: TextWithLinksProps) {
     }
   })
 
-  return <span className={className}>{result}</span>
+  return <div className={`whitespace-pre-wrap ${className}`}>{result}</div>
 }

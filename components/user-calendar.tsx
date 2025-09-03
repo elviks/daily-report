@@ -390,7 +390,7 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                                     )}
                                 </div>
                                 <div className="bg-gray-50 p-4 rounded-lg">
-                                    <div className="whitespace-pre-wrap text-gray-800 font-light leading-relaxed">
+                                    <div className="text-gray-800 font-light leading-relaxed">
                                         <TextWithLinks text={selectedReport.content} />
                                     </div>
                                 </div>

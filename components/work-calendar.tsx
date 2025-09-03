@@ -438,7 +438,7 @@ export function WorkCalendar() {
                                     Daily Report Content
                                 </h3>
                                 <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                                    <p className="text-gray-800 whitespace-pre-wrap"><TextWithLinks text={selectedReport.content} /></p>
+                                    <TextWithLinks text={selectedReport.content} />
                                 </div>
                             </div>
                         </div>
