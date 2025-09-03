@@ -1,18 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
+import { verifyJWT } from "@/lib/db";
+
+// Custom auth function that bypasses rate limiting
+async function authWithoutRateLimit(request: NextRequest) {
+     try {
+          const authHeader = request.headers.get('authorization');
+          if (!authHeader || !authHeader.startsWith('Bearer ')) {
+               return NextResponse.json(
+                    { error: 'Authorization header required' },
+                    { status: 401 }
+               );
+          }
+          
+          const token = authHeader.substring(7);
+          const payload = verifyJWT(token);
+          
+          if (!payload) {
+               return NextResponse.json(
+                    { error: 'Invalid or expired token' },
+                    { status: 401 }
+               );
+          }
+          
+          return { user: payload, tenantId: payload.tid };
+     } catch (error) {
+          return NextResponse.json(
+               { error: 'Authentication failed' },
+               { status: 401 }
+          );
+     }
+}
 
 export async function POST(request: NextRequest) {
      try {
-          // Authenticate user and get tenant info
-          const authResult = await authMiddleware(request);
+          // Authenticate user without rate limiting
+          const authResult = await authWithoutRateLimit(request);
           if (authResult instanceof NextResponse) {
                return authResult;
           }
 
-          const { request: authenticatedRequest, user } = authResult;
-          const tenantId = getTenantIdFromRequest(authenticatedRequest);
+          const { user, tenantId } = authResult;
           
           if (!tenantId) {
                return NextResponse.json(
