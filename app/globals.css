@@ -13,7 +13,7 @@
   --popover-foreground: oklch(0.15 0.02 240);
   
   /* Beautiful Primary Colors */
-  --primary: oklch(0.55 0.15 250);
+  --primary:#DAB231;
   --primary-foreground: oklch(0.98 0.005 240);
   
   /* Enhanced Secondary Colors */

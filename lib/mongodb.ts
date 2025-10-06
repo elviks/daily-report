@@ -42,7 +42,7 @@ if (uri) {
           let connectionOptions: any = {};
 
           if (isAtlas) {
-               // MongoDB Atlas configuration
+               // MongoDB Atlas configuration - optimized for production
                connectionOptions = {
                     ssl: true,
                     tls: true,
@@ -51,44 +51,53 @@ if (uri) {
                     retryWrites: true,
                     w: 'majority',
                     directConnection: false,
-                    maxPoolSize: 10,
-                    minPoolSize: 1,
-                    maxIdleTimeMS: 30000,
-                    serverSelectionTimeoutMS: 5000,
-                    socketTimeoutMS: 45000,
-                    connectTimeoutMS: 10000
+                    maxPoolSize: 20,
+                    minPoolSize: 5,
+                    maxIdleTimeMS: 60000,
+                    serverSelectionTimeoutMS: 15000,
+                    socketTimeoutMS: 60000,
+                    connectTimeoutMS: 20000,
+                    heartbeatFrequencyMS: 10000,
+                    retryReads: true,
+                    maxStalenessSeconds: 120
                };
                console.log("🌐 Detected MongoDB Atlas connection");
           } else if (isLocal) {
-               // Local MongoDB configuration with security
+               // Local MongoDB configuration with security - optimized for production
                connectionOptions = {
                     ssl: false,
                     tls: false,
                     retryWrites: true,
                     w: 'majority',
                     directConnection: false,
-                    maxPoolSize: 10,
-                    minPoolSize: 1,
-                    maxIdleTimeMS: 30000,
-                    serverSelectionTimeoutMS: 5000,
-                    socketTimeoutMS: 45000,
-                    connectTimeoutMS: 10000,
+                    maxPoolSize: 20,
+                    minPoolSize: 5,
+                    maxIdleTimeMS: 60000,
+                    serverSelectionTimeoutMS: 15000,
+                    socketTimeoutMS: 60000,
+                    connectTimeoutMS: 20000,
+                    heartbeatFrequencyMS: 10000,
+                    retryReads: true,
+                    maxStalenessSeconds: 120,
                     // Security options for local MongoDB
                     authSource: 'admin',
                     authMechanism: 'SCRAM-SHA-256'
                };
                console.log("🏠 Detected local MongoDB connection with authentication");
           } else {
-               // Default configuration for other cases
+               // Default configuration for other cases - optimized for production
                connectionOptions = {
                     retryWrites: true,
                     w: 'majority',
-                    maxPoolSize: 10,
-                    minPoolSize: 1,
-                    maxIdleTimeMS: 30000,
-                    serverSelectionTimeoutMS: 5000,
-                    socketTimeoutMS: 45000,
-                    connectTimeoutMS: 10000
+                    maxPoolSize: 20,
+                    minPoolSize: 5,
+                    maxIdleTimeMS: 60000,
+                    serverSelectionTimeoutMS: 15000,
+                    socketTimeoutMS: 60000,
+                    connectTimeoutMS: 20000,
+                    heartbeatFrequencyMS: 10000,
+                    retryReads: true,
+                    maxStalenessSeconds: 120
                };
                console.log("🔧 Using default MongoDB connection options");
           }

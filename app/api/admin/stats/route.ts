@@ -44,15 +44,24 @@ export async function GET(request: NextRequest) {
                     tenantId: new ObjectId(tenantId)
                });
 
-          // Get active users (users who submitted reports in last 7 days) for this tenant
+          // Get active users (non-admin users who submitted reports in last 7 days) for this tenant
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+          // First get all non-admin user IDs for this tenant
+          const nonAdminUsers = await db.collection("users").find({
+               tenantId: new ObjectId(tenantId),
+               isAdmin: { $ne: true }
+          }).toArray();
+          
+          const nonAdminUserIds = nonAdminUsers.map(user => user._id);
 
           const activeUsers = await db
                .collection("reports")
                .distinct("userId", {
                     createdAt: { $gte: sevenDaysAgo },
-                    tenantId: new ObjectId(tenantId)
+                    tenantId: new ObjectId(tenantId),
+                    userId: { $in: nonAdminUserIds }
                });
 
           return NextResponse.json({

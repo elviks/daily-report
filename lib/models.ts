@@ -34,19 +34,7 @@ export interface Report {
   userId: ObjectId;
   date: string;
   content: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-// Notification Schema with tenant support
-export interface Notification {
-  _id?: ObjectId;
-  tenantId: ObjectId;
-  userId: ObjectId;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  isRead: boolean;
+  photos?: string[]; // Array of base64 encoded photos
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -55,6 +43,5 @@ export interface Notification {
 export const COLLECTIONS = {
   TENANTS: 'tenants',
   USERS: 'users',
-  REPORTS: 'reports',
-  NOTIFICATIONS: 'notifications'
+  REPORTS: 'reports'
 } as const;

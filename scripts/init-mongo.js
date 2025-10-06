@@ -43,7 +43,6 @@ db.createUser({
 db.createCollection('tenants');
 db.createCollection('users');
 db.createCollection('reports');
-db.createCollection('notifications');
 db.createCollection('audit_logs');
 db.createCollection('failed_logins');
 db.createCollection('security_events');
@@ -52,7 +51,6 @@ db.createCollection('security_events');
 db.tenants.createIndex({ "slug": 1 }, { unique: true });
 db.users.createIndex({ "email": 1, "tenantId": 1 }, { unique: true });
 db.reports.createIndex({ "tenantId": 1, "date": -1 });
-db.notifications.createIndex({ "tenantId": 1, "userId": 1 });
 db.audit_logs.createIndex({ "timestamp": -1 });
 db.audit_logs.createIndex({ "userId": 1, "timestamp": -1 });
 db.failed_logins.createIndex({ "ip": 1, "timestamp": -1 });

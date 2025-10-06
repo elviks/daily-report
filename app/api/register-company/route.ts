@@ -2,7 +2,8 @@ import {
      type NextRequest,
      NextResponse,
 } from "next/server";
-import { createTenant, createUser, hashPassword, initializeDatabase, findTenantBySlug } from "@/lib/db";
+import { createTenant, createUser, hashPassword, findTenantBySlug } from "@/lib/db";
+import { ensureInitialization } from "@/lib/db-init";
 
 // Simple slugify function
 function slugify(text: string): string {
@@ -19,8 +20,8 @@ function slugify(text: string): string {
 
 export async function POST(request: NextRequest) {
      try {
-          // Initialize database
-          await initializeDatabase();
+          // Initialize database and bootstrap default tenant only once
+          await ensureInitialization();
 
           const { companyName, adminEmail, adminPassword } = await request.json();
 

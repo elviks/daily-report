@@ -1,13 +1,28 @@
 import clientPromise from './mongodb';
 import { ObjectId } from 'mongodb';
-import { Tenant, User, Report, Notification, COLLECTIONS } from './models';
+import { Tenant, User, Report, COLLECTIONS } from './models';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-// Database connection helper
+// Database connection helper with timeout
 export async function getDb() {
-  const client = await clientPromise;
-  return client.db('daily-report');
+  try {
+    if (!clientPromise) {
+      throw new Error('MongoDB connection not initialized');
+    }
+    
+    const client = await Promise.race([
+      clientPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout')), 15000)
+      )
+    ]);
+    
+    return client.db('daily-report');
+  } catch (error) {
+    console.error('Database connection error:', error);
+    throw new Error('Database connection failed');
+  }
 }
 
 // Tenant operations
@@ -140,7 +155,6 @@ export async function initializeDatabase() {
     { unique: true }
   );
   await db.collection(COLLECTIONS.REPORTS).createIndex({ tenantId: 1, date: -1 });
-  await db.collection(COLLECTIONS.NOTIFICATIONS).createIndex({ tenantId: 1, userId: 1 });
   
   console.log('✅ Database indexes created successfully');
 }

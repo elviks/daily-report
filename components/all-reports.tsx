@@ -24,6 +24,8 @@ import {
      Download,
      Calendar,
      User,
+     ChevronDown,
+     ChevronUp,
 } from "lucide-react";
 import { TextWithLinks } from "@/components/ui/text-with-links";
 
@@ -44,6 +46,7 @@ export function AllReports() {
      const [filteredReports, setFilteredReports] = useState<
           Report[]
      >([]);
+     const [displayedReports, setDisplayedReports] = useState<Report[]>([]);
      const [loading, setLoading] = useState(true);
      const [error, setError] = useState<string | null>(null);
      const [searchTerm, setSearchTerm] = useState("");
@@ -53,6 +56,8 @@ export function AllReports() {
      const [departments, setDepartments] = useState<
           string[]
      >([]);
+     const [visibleCount, setVisibleCount] = useState(4);
+     const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
 
      useEffect(() => {
           fetchReports();
@@ -66,6 +71,15 @@ export function AllReports() {
           dateFilter,
           departmentFilter,
      ]);
+
+     useEffect(() => {
+          // Update displayed reports when filtered reports change
+          setDisplayedReports(filteredReports.slice(0, visibleCount));
+          // Reset visible count when filters change
+          setVisibleCount(4);
+          // Reset expanded reports when filters change
+          setExpandedReports(new Set());
+     }, [filteredReports]);
 
      const fetchReports = async () => {
           try {
@@ -168,7 +182,30 @@ export function AllReports() {
           setFilteredReports(filtered);
      };
 
+     const loadMoreReports = () => {
+          const newVisibleCount = visibleCount + 4;
+          setVisibleCount(newVisibleCount);
+          setDisplayedReports(filteredReports.slice(0, newVisibleCount));
+     };
 
+     const hasMoreReports = displayedReports.length < filteredReports.length;
+
+     const toggleReportExpansion = (reportId: string) => {
+          setExpandedReports(prev => {
+               const newSet = new Set(prev);
+               if (newSet.has(reportId)) {
+                    newSet.delete(reportId);
+               } else {
+                    newSet.add(reportId);
+               }
+               return newSet;
+          });
+     };
+
+     const isReportLong = (content: string) => {
+          if (!content) return false;
+          return content.length > 150 || (content.match(/\n/g) || []).length > 2;
+     };
 
      const formatDate = (dateString: string) => {
           return new Date(dateString).toLocaleDateString(
@@ -218,8 +255,8 @@ export function AllReports() {
                               <CardDescription>
                                    View and manage all
                                    submitted daily reports (
-                                   {filteredReports?.length || 0}
-                                   reports)
+                                   {displayedReports?.length || 0} of {filteredReports?.length || 0}
+                                   reports shown)
                               </CardDescription>
                          </div>
                     </div>
@@ -288,7 +325,7 @@ export function AllReports() {
                               </div>
                          ) : (
                               <div className="space-y-4">
-                                   {filteredReports?.map(
+                                   {displayedReports?.map(
                                         (report) => (
                                              <div
                                                   key={
@@ -327,9 +364,35 @@ export function AllReports() {
                                                   </div>
 
                                                   <div className="text-sm">
-                                                       <p className="line-clamp-3">
-                                                            <TextWithLinks text={report.content} />
-                                                       </p>
+                                                       <div>
+                                                            {expandedReports.has(report.id) ? (
+                                                                 <div>
+                                                                      <TextWithLinks text={report.content} />
+                                                                 </div>
+                                                            ) : (
+                                                                 <div className="line-clamp-3">
+                                                                      <TextWithLinks text={report.content} />
+                                                                 </div>
+                                                            )}
+                                                       </div>
+                                                       {isReportLong(report.content) && (
+                                                            <button
+                                                                 onClick={() => toggleReportExpansion(report.id)}
+                                                                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-2 transition-colors cursor-pointer"
+                                                            >
+                                                                 {expandedReports.has(report.id) ? (
+                                                                      <>
+                                                                           <ChevronUp className="h-3 w-3" />
+                                                                           <span>See Less</span>
+                                                                      </>
+                                                                 ) : (
+                                                                      <>
+                                                                           <ChevronDown className="h-3 w-3" />
+                                                                           <span>See More</span>
+                                                                      </>
+                                                                 )}
+                                                            </button>
+                                                       )}
                                                   </div>
 
                                                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -358,6 +421,25 @@ export function AllReports() {
                               </div>
                          )}
                     </ScrollArea>
+
+                    {/* Load More Button */}
+                    {hasMoreReports ? (
+                         <div className="flex justify-center pt-4">
+                              <Button
+                                   onClick={loadMoreReports}
+                                   variant="outline"
+                                   className="px-8"
+                              >
+                                   Load More Reports ({filteredReports.length - displayedReports.length} remaining)
+                              </Button>
+                         </div>
+                    ) : filteredReports.length > 4 ? (
+                         <div className="flex justify-center pt-4">
+                              <div className="text-sm text-muted-foreground">
+                                   All {filteredReports.length} reports loaded
+                              </div>
+                         </div>
+                    ) : null}
                </CardContent>
           </Card>
      );

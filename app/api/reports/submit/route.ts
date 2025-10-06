@@ -62,6 +62,17 @@ export async function POST(request: NextRequest) {
                );
           }
 
+          // Validate photos if provided
+          const photos = data.photos || [];
+          if (photos.length > 10) {
+               return NextResponse.json(
+                    {
+                         error: "Maximum 10 photos allowed per report",
+                    },
+                    { status: 400 }
+               );
+          }
+
           // Use the authenticated user's ID from the token
           const originalUserId: string = user.uid;
           const normalizedDate: string = data.date;
@@ -88,7 +99,7 @@ export async function POST(request: NextRequest) {
                     if (existing) {
                          await reportsCol.updateOne(
                               { _id: existing._id },
-                              { $set: { content: data.content, updatedAt: new Date() } }
+                              { $set: { content: data.content, photos: photos, updatedAt: new Date() } }
                          );
                          return NextResponse.json({ success: true, id: existing._id.toString(), updated: true });
                     }
@@ -97,6 +108,7 @@ export async function POST(request: NextRequest) {
                     const insertResult = await reportsCol.insertOne({
                          userId: mongoUserId,
                          content: data.content,
+                         photos: photos,
                          date: normalizedDate,
                          tenantId: new ObjectId(tenantId),
                          createdAt: new Date(),

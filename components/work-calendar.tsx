@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, Check, X, Calendar, Users, FileText, Clock, User } from "lucide-react"
 import { TextWithLinks } from "@/components/ui/text-with-links"
+import { PhotoViewer } from "@/components/photo-viewer"
 
 interface User {
     id: string
@@ -21,6 +22,7 @@ interface Report {
     userId: string
     date: string
     content: string
+    photos?: string[]
     createdAt: string
 }
 
@@ -262,14 +264,17 @@ export function WorkCalendar() {
                                             Team Members
                                         </div>
                                     </th>
-                                    {visibleDays.map((day, index) => (
-                                        <th key={index} className="text-center font-semibold text-gray-700 p-3 min-w-[50px] border-r border-gray-200 last:border-r-0">
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-sm text-gray-500">Day</span>
-                                                <span className="text-lg font-bold">{day}</span>
-                                            </div>
-                                        </th>
-                                    ))}
+                                    {visibleDays.map((day, index) => {
+                                        const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+                                        const shortMonthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                        return (
+                                            <th key={index} className="text-center font-semibold text-gray-700 p-3 min-w-[50px] border-r border-gray-200 last:border-r-0">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-sm font-bold text-gray-700">{shortMonthDay}</span>
+                                                </div>
+                                            </th>
+                                        );
+                                    })}
                                 </tr>
                             </thead>
 
@@ -440,6 +445,19 @@ export function WorkCalendar() {
                                 <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
                                     <TextWithLinks text={selectedReport.content} />
                                 </div>
+                                
+                                {/* Photos Section */}
+                                {selectedReport.photos && selectedReport.photos.length > 0 && (
+                                    <div className="mt-4">
+                                        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            Attached Photos
+                                        </h3>
+                                        <div className="flex justify-start">
+                                            <PhotoViewer photos={selectedReport.photos} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (

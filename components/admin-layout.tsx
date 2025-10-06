@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Shield, LogOut, Bell, Users, BarChart3, User } from "lucide-react"
+import { Shield, LogOut, Users, BarChart3, User } from "lucide-react"
 import Link from "next/link"
 
 interface User {
@@ -90,15 +90,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
               </Link>
               
-              <nav className="hidden md:flex items-center space-x-6">
-                <Link 
-                  href="/admin/profile" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </Link>
-              </nav>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

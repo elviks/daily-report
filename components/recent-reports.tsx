@@ -4,23 +4,28 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Calendar, FileText, Eye, Clock, TrendingUp, CheckCircle } from "lucide-react"
+import { Calendar, FileText, Eye, Clock, TrendingUp, CheckCircle, Search } from "lucide-react"
 import { TextWithLinks } from "@/components/ui/text-with-links"
+import { PhotoViewer } from "@/components/photo-viewer"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface Report {
   id: string
   date: string
   content: string
+  photos?: string[]
   createdAt: string
 }
 
 export function RecentReports() {
   const [reports, setReports] = useState<Report[]>([])
+  const [filteredReports, setFilteredReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     fetchReports()
@@ -33,6 +38,19 @@ export function RecentReports() {
     window.addEventListener("reportSubmitted", handleReportSubmitted)
     return () => window.removeEventListener("reportSubmitted", handleReportSubmitted)
   }, [])
+
+  // Filter reports based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredReports(reports)
+    } else {
+      const filtered = reports.filter(report => 
+        report.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        formatDate(report.date).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setFilteredReports(filtered)
+    }
+  }, [reports, searchQuery])
 
   const fetchReports = async () => {
     try {
@@ -144,17 +162,35 @@ export function RecentReports() {
             </div>
           </div>
 
-          {/* Stats Badge */}
-          <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-100 rounded-full border border-gray-200/50">
-            <CheckCircle className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {reports.length} {reports.length === 1 ? 'Report' : 'Reports'}
-            </span>
-          </div>
+          
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
+      <div className="flex items-center justify-center space-x-3 mb-6">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search reports..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-64 border-gray-300 focus:border-gray-400 focus:ring-gray-400"
+              />
+            </div>
+
+            {/* Stats Badge */}
+            <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-100 rounded-full border border-gray-200/50">
+              <CheckCircle className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {filteredReports.length} {filteredReports.length === 1 ? 'Report' : 'Reports'}
+                {searchQuery && filteredReports.length !== reports.length && (
+                  <span className="text-gray-500"> of {reports.length}</span>
+                )}
+              </span>
+            </div>
+          </div>
         <ScrollArea className="h-[500px]">
           {reports.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
@@ -170,9 +206,22 @@ export function RecentReports() {
               </p>
 
             </div>
+          ) : filteredReports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-gradient-to-r from-slate-200 to-slate-300 rounded-2xl flex items-center justify-center">
+                  <Search className="w-10 h-10 text-slate-400" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-200 rounded-full"></div>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 mb-2">No reports found</h3>
+              <p className="text-slate-500 text-sm max-w-sm">
+                No reports match your search criteria. Try adjusting your search terms.
+              </p>
+            </div>
           ) : (
             <div className="space-y-4 p-6">
-              {reports.map((report, index) => {
+              {filteredReports.map((report, index) => {
                 const isLong = (report.content?.length || 0) > 220
                 const isRecent = new Date(report.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
@@ -225,7 +274,7 @@ export function RecentReports() {
                         <TextWithLinks text={report.content} />
                       </div>
 
-                      {/* Content Stats */}
+                      {/* Content Stats and Actions */}
                       <div className="flex items-center justify-between text-sm text-slate-500">
                         <div className="flex items-center space-x-4">
                           <span className="flex items-center space-x-1">
@@ -238,11 +287,16 @@ export function RecentReports() {
                           </span>
                         </div>
 
-                        {isLong && (
-                          <span className="text-blue-600 font-medium">
-                            Click "View Full" to read more
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {report.photos && report.photos.length > 0 && (
+                            <PhotoViewer photos={report.photos} />
+                          )}
+                          {isLong && (
+                            <span className="text-blue-600 font-medium">
+                              Click "View Full" to read more
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -281,6 +335,15 @@ export function RecentReports() {
                 {selectedReport ? <TextWithLinks text={selectedReport.content} /> : ''}
               </div>
             </div>
+
+            {/* Photos Section */}
+            {selectedReport?.photos && selectedReport.photos.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <div className="flex items-center justify-center">
+                  <PhotoViewer photos={selectedReport.photos} className="bg-white hover:bg-gray-50" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Report Stats */}

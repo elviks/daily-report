@@ -16,19 +16,66 @@ const SECURITY_CONFIG = {
 // Rate limiting store
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-// Security event logging
+// Cleanup rate limiting store periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of rateLimitStore.entries()) {
+    if (now > data.resetTime) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000); // Clean up every 5 minutes
+
+// Security event logging - optimized for performance
+const securityEventQueue: Array<{event: string, details: any, severity: 'low' | 'medium' | 'high', ip: string}> = [];
+let isProcessingQueue = false;
+
 async function logSecurityEvent(event: string, details: any, severity: 'low' | 'medium' | 'high' = 'low') {
+  // Add to queue instead of blocking request
+  securityEventQueue.push({
+    event,
+    details,
+    severity,
+    ip: details.ip || 'unknown'
+  });
+  
+  // Process queue asynchronously
+  if (!isProcessingQueue) {
+    processSecurityEventQueue();
+  }
+}
+
+async function processSecurityEventQueue() {
+  if (isProcessingQueue || securityEventQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
   try {
-    const db = await getDb();
-    await db.collection('security_events').insertOne({
-      timestamp: new Date(),
-      event,
-      details,
-      severity,
-      ip: details.ip || 'unknown'
-    });
+    const events = securityEventQueue.splice(0, 10); // Process up to 10 events at once
+    
+    if (events.length > 0) {
+      const db = await getDb();
+      await db.collection('security_events').insertMany(
+        events.map(e => ({
+          timestamp: new Date(),
+          event: e.event,
+          details: e.details,
+          severity: e.severity,
+          ip: e.ip
+        }))
+      );
+    }
   } catch (error) {
-    console.error('Failed to log security event:', error);
+    console.error('Failed to log security events:', error);
+    // Re-add failed events to the front of the queue
+    securityEventQueue.unshift(...events);
+  } finally {
+    isProcessingQueue = false;
+    
+    // Continue processing if there are more events
+    if (securityEventQueue.length > 0) {
+      setTimeout(processSecurityEventQueue, 100);
+    }
   }
 }
 
@@ -234,6 +281,15 @@ export async function cleanupSecurityData() {
     console.error('Failed to cleanup security data:', error);
   }
 }
+
+// Schedule periodic cleanup
+setInterval(async () => {
+  try {
+    await cleanupSecurityData();
+  } catch (error) {
+    console.error('Scheduled security cleanup failed:', error);
+  }
+}, 24 * 60 * 60 * 1000); // Run cleanup every 24 hours
 
 // Export security configuration
 export { SECURITY_CONFIG };

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, CheckCircle, XCircle, FileText, Clock, User } from "lucide-react"
 import { isWorkingDay } from "@/lib/utils"
 import { TextWithLinks } from "@/components/ui/text-with-links"
+import { PhotoViewer } from "@/components/photo-viewer"
 
 interface UserCalendarProps {
     userId: string
@@ -16,6 +17,7 @@ interface Report {
     id: string
     date: string
     content: string
+    photos?: string[]
     createdAt: string
     updatedAt: string
 }
@@ -394,6 +396,19 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                                         <TextWithLinks text={selectedReport.content} />
                                     </div>
                                 </div>
+                                
+                                {/* Photos Section */}
+                                {selectedReport.photos && selectedReport.photos.length > 0 && (
+                                    <div className="mt-4">
+                                        <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            Attached Photos
+                                        </h4>
+                                        <div className="flex justify-start">
+                                            <PhotoViewer photos={selectedReport.photos} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-8">

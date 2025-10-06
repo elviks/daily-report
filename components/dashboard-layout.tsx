@@ -11,11 +11,10 @@ import {
      DropdownMenuSeparator,
      DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, LogOut, User, Settings, Bell, ChevronDown } from "lucide-react";
+import { FileText, LogOut, User, Settings, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { NotificationPanel } from "@/components/notification-panel";
-import { useNotifications } from "@/hooks/use-notifications";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface DashboardLayoutProps {
      children: React.ReactNode;
@@ -26,7 +25,6 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
      const [user, setUser] = useState<any | null>(null);
      const router = useRouter();
-     const { fetchNotifications } = useNotifications(user?.id || '');
 
      useEffect(() => {
           const userData = localStorage.getItem("user");
@@ -73,11 +71,6 @@ export function DashboardLayout({
           };
      }, []);
 
-     useEffect(() => {
-          if (user) {
-               fetchNotifications();
-          }
-     }, [user, fetchNotifications]);
 
 
 
@@ -156,11 +149,9 @@ export function DashboardLayout({
 
                               {/* Right Side Actions */}
                               <div className="flex items-center gap-4">
-                                   {/* Notification Panel */}
-                                   <div className="relative">
-                                        <NotificationPanel userId={user._id || user.id} />
-                                   </div>
-
+                                   {/* Notification Bell */}
+                                   <NotificationBell />
+                                   
                                    {/* User Profile Dropdown */}
                                    <DropdownMenu>
                                         <DropdownMenuTrigger asChild>

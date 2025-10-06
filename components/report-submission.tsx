@@ -7,12 +7,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Send, Calendar, CheckCircle, FileText, Clock, Target, TrendingUp } from "lucide-react"
+import { Send, Calendar, CheckCircle, FileText, Clock, Target, TrendingUp, Camera, X, Upload } from "lucide-react"
 import { getAllowedReportDates, isDateAllowedForReport, getAllowedDatesMessage } from "@/lib/utils"
 
 export function ReportSubmission() {
   const [date, setDate] = useState("")
   const [content, setContent] = useState("")
+  const [photos, setPhotos] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
@@ -41,10 +42,12 @@ export function ReportSubmission() {
 
       if (data.exists) {
         setContent(data.report.content)
+        setPhotos(data.report.photos || [])
         setSubmitted(true)
       } else {
         setSubmitted(false)
         setContent("")
+        setPhotos([])
       }
     } catch (error) {
       console.error("Error checking submission:", error)
@@ -59,7 +62,28 @@ export function ReportSubmission() {
     }
     setError("")
     setDate(newDate)
+    setPhotos([])
     checkTodaySubmission(newDate)
+  }
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files) return
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string
+          setPhotos(prev => [...prev, base64])
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +103,7 @@ export function ReportSubmission() {
         body: JSON.stringify({
           date,
           content,
+          photos,
         }),
       })
 
@@ -155,19 +180,37 @@ export function ReportSubmission() {
 
             {/* Date Selection */}
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-gray-700 font-medium text-sm flex items-center space-x-2">
+              <Label className="text-gray-700 font-medium text-sm flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-gray-500" />
                 <span>Report Date</span>
               </Label>
-              <div className="relative">
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  required
-                  className="border-gray-300 focus:border-gray-400 focus:ring-gray-400"
-                />
+              <div className="flex space-x-3">
+                <Button
+                  type="button"
+                  variant={date === allowedDates.today ? "default" : "outline"}
+                  onClick={() => handleDateChange(allowedDates.today)}
+                  className={`flex-1 ${
+                    date === allowedDates.today 
+                      ? "bg-gray-900 text-white hover:bg-gray-800" 
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Today ({new Date(allowedDates.today).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                </Button>
+                <Button
+                  type="button"
+                  variant={date === allowedDates.yesterday ? "default" : "outline"}
+                  onClick={() => handleDateChange(allowedDates.yesterday)}
+                  className={`flex-1 ${
+                    date === allowedDates.yesterday 
+                      ? "bg-gray-900 text-white hover:bg-gray-800" 
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Yesterday ({new Date(allowedDates.yesterday).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                </Button>
               </div>
             </div>
 
@@ -190,7 +233,64 @@ export function ReportSubmission() {
               {/* Character Counter */}
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>{content.length} characters written</span>
+              </div>
+            </div>
 
+            {/* Photo Upload Section */}
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-medium text-sm flex items-center space-x-2">
+                <Camera className="w-4 h-4 text-gray-500" />
+                <span>Attach Photos (Optional)</span>
+              </Label>
+              
+              <div className="space-y-3">
+                {/* Upload Button */}
+                <div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="photo-upload"
+                  />
+                  <Label
+                    htmlFor="photo-upload"
+                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Photos
+                  </Label>
+                </div>
+
+                {/* Photo Preview Grid */}
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {photos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={photo}
+                          alt={`Upload ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removePhoto(index)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Photo Upload Info */}
+                <p className="text-xs text-gray-500">
+                  You can upload multiple photos. Supported formats: JPG, PNG, GIF. Max 5MB per photo.
+                </p>
               </div>
             </div>
 

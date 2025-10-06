@@ -19,7 +19,7 @@ async function initializeDatabase() {
     const db = client.db('daily-report');
     
     // Create collections if they don't exist
-    const collections = ['tenants', 'users', 'reports', 'notifications'];
+    const collections = ['tenants', 'users', 'reports'];
     for (const collectionName of collections) {
       try {
         await db.createCollection(collectionName);
@@ -51,9 +51,6 @@ async function initializeDatabase() {
     await db.collection('reports').createIndex({ tenantId: 1, date: -1 });
     console.log('✅ Created report tenant+date index');
     
-    // Notification indexes
-    await db.collection('notifications').createIndex({ tenantId: 1, userId: 1 });
-    console.log('✅ Created notification tenant+user index');
     
     // Check if default tenant exists
     const existingTenant = await db.collection('tenants').findOne({ slug: 'mockco' });

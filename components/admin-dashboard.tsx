@@ -6,7 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AllReports } from "@/components/all-reports"
 import { UserManagement } from "@/components/user-management"
 import { WorkCalendar } from "@/components/work-calendar"
-import { Users, FileText, TrendingUp, Calendar, BarChart3, Activity, Zap, Target, Settings } from "lucide-react"
+import { ReportAnalytics } from "@/components/report-analytics"
+import { ReportProgress } from "@/components/report-progress"
+import { AdminReportSubmission } from "@/components/admin-report-submission"
+import { Users, FileText, TrendingUp, Calendar, BarChart3, Activity, Zap, Target, Settings, UserPlus } from "lucide-react"
 
 interface DashboardStats {
   totalUsers: number
@@ -57,73 +60,79 @@ export function AdminDashboard() {
     <div className="space-y-8">
       {/* Enhanced Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="glass border-0 shadow-xl hoverflow-hidden group">
+        <Card className="glass border-0 shadow-xl hoverflow-hidden group rounded-2xl bg-[var(--primary)]">
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
-            <CardTitle className="text-sm font-medium text-slate-700">Total Users</CardTitle>
-            <div className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-lg duration-300">
-              <Users className="h-5 w-5 text-white" />
+            <CardTitle className="text-sm font-medium text-white">Total Users</CardTitle>
+            <div className="p-2 bg-white rounded-xl shadow-lg duration-300">
+              <Users className="h-5 w-5 text-[var(--primary)]" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-800 mb-2">{stats.totalUsers}</div>
+            <div className="text-3xl font-bold text-white mb-2">{stats.totalUsers}</div>
             <div className="flex items-center text-sm text-slate-600">
-              <TrendingUp className="w-4 h-4 text-gray-500 mr-1" />
-              <span>Active platform users</span>
+              <TrendingUp className="w-4 h-4 text-white mr-1" />
+              <span className="text-white">Active platform users</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass border-0 shadow-xl overflow-hidden group">
+        <Card className="glass border-0 shadow-xl overflow-hidden group rounded-2xl bg-[var(--primary)]">
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
-            <CardTitle className="text-sm font-medium text-slate-700">Total Reports</CardTitle>
-            <div className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-lg duration-300">
-              <FileText className="h-5 w-5 text-white" />
+            <CardTitle className="text-sm font-medium text-white">Total Reports</CardTitle>
+            <div className="p-2 bg-white rounded-xl shadow-lg duration-300">
+              <FileText className="h-5 w-5 text-[var(--primary)]" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-800 mb-2">{stats.totalReports}</div>
-            <div className="flex items-center text-sm text-slate-600">
-              <Activity className="w-4 h-4 text-gray-500 mr-1" />
-              <span>Reports submitted</span>
+            <div className="text-3xl font-bold text-white mb-2">{stats.totalReports}</div>
+            <div className="flex items-center text-sm text-white">
+              <Activity className="w-4 h-4 text-white mr-1" />
+              <span className="text-white">Reports submitted</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass border-0 shadow-xl overflow-hidden group">
+        <Card className="glass border-0 shadow-xl overflow-hidden group rounded-2xl bg-[var(--primary)]">
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
-            <CardTitle className="text-sm font-medium text-slate-700">Reports Today</CardTitle>
-            <div className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-lg duration-300">
-              <Calendar className="h-5 w-5 text-white" />
+            <CardTitle className="text-sm font-medium text-white">Reports Today</CardTitle>
+            <div className="p-2 bg-white rounded-xl shadow-lg duration-300">
+              <Calendar className="h-5 w-5 text-[var(--primary)]" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-800 mb-2">{stats.reportsToday}</div>
+            <div className="text-3xl font-bold text-white mb-2">{stats.reportsToday}</div>
             <div className="flex items-center text-sm text-slate-600">
-              <Zap className="w-4 h-4 text-gray-500 mr-1" />
-              <span>Today's activity</span>
+              <Zap className="w-4 h-4 text-white mr-1" />
+              <span className="text-white">Today's activity</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass border-0 shadow-xl overflow-hidden group">
+        <Card className="glass border-0 shadow-xl overflow-hidden group rounded-2xl bg-[var(--primary)]">
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
-            <CardTitle className="text-sm font-medium text-slate-700">Active Users</CardTitle>
-            <div className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-lg duration-300">
-              <TrendingUp className="h-5 w-5 text-white" />
+            <CardTitle className="text-sm font-medium text-white">Active Users</CardTitle>
+            <div className="p-2 bg-white rounded-xl shadow-lg duration-300">
+              <TrendingUp className="h-5 w-5 text-[var(--primary)]" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-800 mb-2">{stats.activeUsers}</div>
+            <div className="text-3xl font-bold text-white mb-2">{stats.activeUsers}</div>
             <div className="flex items-center text-sm text-slate-600">
-              <Target className="w-4 h-4 text-gray-500 mr-1" />
-              <span>Currently online</span>
+              <Target className="w-4 h-4 text-white mr-1" />
+              <span className="text-white">Currently online</span>
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Report Analytics and Progress Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <ReportAnalytics />
+        <ReportProgress />
       </div>
 
       {/* Main Content Tabs */}
@@ -154,6 +163,13 @@ export function AdminDashboard() {
                   All Reports
                 </TabsTrigger>
                 <TabsTrigger
+                  value="submit"
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Submit for Employee
+                </TabsTrigger>
+                <TabsTrigger
                   value="users"
                   className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
@@ -172,6 +188,10 @@ export function AdminDashboard() {
 
             <TabsContent value="reports" className="p-6 space-y-4">
               <AllReports />
+            </TabsContent>
+
+            <TabsContent value="submit" className="p-6 space-y-4">
+              <AdminReportSubmission />
             </TabsContent>
 
             <TabsContent value="users" className="p-6 space-y-4">

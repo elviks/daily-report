@@ -7,17 +7,15 @@ import {
      findTenantBySlug, 
      findUserByEmailAndTenant, 
      verifyPassword, 
-     generateJWT,
-     initializeDatabase,
-     bootstrapDefaultTenant 
+     generateJWT
 } from "@/lib/db";
+import { ensureInitialization } from "@/lib/db-init";
 import { loadTenantMiddleware } from "@/lib/middleware";
 
 export async function POST(request: NextRequest) {
      try {
-          // Initialize database and bootstrap default tenant on first request
-          await initializeDatabase();
-          await bootstrapDefaultTenant();
+          // Initialize database and bootstrap default tenant only once
+          await ensureInitialization();
 
           const { email, password, companyCode } = await request.json();
 
