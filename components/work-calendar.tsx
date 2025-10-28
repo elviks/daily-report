@@ -278,7 +278,7 @@ export function WorkCalendar() {
                             {/* Date Header Row */}
                             <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <th className="text-left font-semibold text-gray-700 p-4 min-w-[150px] border-r border-gray-200 bg-gray-50">
+                                    <th className="text-left font-semibold text-gray-700 p-4 min-w-[150px] border-r border-gray-200 bg-gray-50 sticky top-0 left-0 z-30 shadow-sm">
                                         <div className="flex items-center gap-2">
                                             <Users className="h-4 w-4 text-gray-600" />
                                             Team Members
@@ -301,8 +301,8 @@ export function WorkCalendar() {
                             {/* User Rows */}
                             <tbody>
                                 {users.map((user, userIndex) => (
-                                    <tr key={user.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${userIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                                        <td className="font-semibold text-gray-800 p-4 border-r border-gray-200">
+                                    <tr key={user.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${userIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                        <td className={`font-semibold text-gray-800 p-4 border-r border-gray-200 sticky left-0 z-20 ${userIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                                     <span className="text-gray-600 font-semibold text-sm">
