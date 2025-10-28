@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, User, Mail, Lock, Building, Phone, Shield } from "lucide-react"
+import { Plus, User, Mail, Lock, Building, Phone, Shield, Eye, EyeOff } from "lucide-react"
 
 interface AddTeamMemberProps {
     onUserAdded: () => void
@@ -19,6 +19,7 @@ export function AddTeamMember({ onUserAdded }: AddTeamMemberProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [message, setMessage] = useState("")
     const [error, setError] = useState("")
+    const [showPassword, setShowPassword] = useState(false)
 
     const [formData, setFormData] = useState({
         name: "",
@@ -63,6 +64,7 @@ export function AddTeamMember({ onUserAdded }: AddTeamMemberProps) {
                     phone: "",
                     role: "user"
                 })
+                setShowPassword(false)
                 onUserAdded()
                 setTimeout(() => {
                     setIsOpen(false)
@@ -93,6 +95,7 @@ export function AddTeamMember({ onUserAdded }: AddTeamMemberProps) {
         })
         setError("")
         setMessage("")
+        setShowPassword(false)
     }
 
     return (
@@ -177,14 +180,27 @@ export function AddTeamMember({ onUserAdded }: AddTeamMemberProps) {
                             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 id="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={formData.password}
                                 onChange={(e) => handleInputChange("password", e.target.value)}
-                                className="pl-10"
+                                className="pl-10 pr-10"
                                 placeholder="Set initial password"
                                 required
                                 minLength={6}
                             />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4 text-gray-400" />
+                                ) : (
+                                    <Eye className="h-4 w-4 text-gray-400" />
+                                )}
+                            </Button>
                         </div>
                         <p className="text-xs text-gray-500">
                             Member can change this password later from their profile

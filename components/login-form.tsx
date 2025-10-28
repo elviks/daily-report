@@ -56,7 +56,7 @@ export function LoginForm() {
                     console.log("User data:", data.user);
                     console.log("User role:", data.user.role);
                     console.log("User isAdmin:", data.user.isAdmin);
-                    
+
                     // Store user data in localStorage (in production, use proper session management)
                     localStorage.setItem(
                          "user",
@@ -74,7 +74,7 @@ export function LoginForm() {
                     // Redirect based on role and admin status
                     const isAdminUser = data.user.isAdmin || data.user.role === "superadmin" || data.user.role === "admin";
                     console.log("Is admin user:", isAdminUser);
-                    
+
                     if (isAdminUser) {
                          console.log("Redirecting to admin panel");
                          router.push("/admin");

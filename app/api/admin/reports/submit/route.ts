@@ -4,6 +4,9 @@ import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middlew
 import { createReport, findUserById } from "@/lib/db";
 import clientPromise from "@/lib/mongodb";
 
+// Hardcoded PIN code for admin report submission
+const ADMIN_PINCODE = "iamadmin";
+
 export async function POST(request: NextRequest) {
   try {
     // Authenticate admin user and get tenant info
@@ -14,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const { request: authenticatedRequest } = authResult;
     const tenantId = getTenantIdFromRequest(authenticatedRequest);
-    
+
     if (!tenantId) {
       return NextResponse.json(
         { error: "Tenant information not found" },
@@ -23,13 +26,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, date, content, reason } = body;
+    const { userId, date, content, pincode } = body;
 
     // Validate required fields
-    if (!userId || !date || !content) {
+    if (!userId || !date || !content || !pincode) {
       return NextResponse.json(
-        { error: "User ID, date, and content are required" },
+        { error: "User ID, date, content, and PIN code are required" },
         { status: 400 }
+      );
+    }
+
+    // Validate PIN code
+    if (pincode !== ADMIN_PINCODE) {
+      return NextResponse.json(
+        { error: "Invalid PIN code. Report submission denied." },
+        { status: 403 }
       );
     }
 
@@ -90,7 +101,6 @@ export async function POST(request: NextRequest) {
       date: date,
       content: content,
       submittedByAdmin: true,
-      adminReason: reason || "Submitted by admin on behalf of employee",
       submittedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date()
@@ -121,7 +131,6 @@ export async function POST(request: NextRequest) {
             date: 1,
             content: 1,
             submittedByAdmin: 1,
-            adminReason: 1,
             submittedAt: 1,
             createdAt: 1,
             userName: "$user.name",

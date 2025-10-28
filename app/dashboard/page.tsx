@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ReportSubmission } from "@/components/report-submission"
 import { RecentReports } from "@/components/recent-reports"
-import { Calendar, FileText, TrendingUp, Clock } from "lucide-react"
+import { Calendar, FileText, TrendingUp } from "lucide-react"
 
 export default function DashboardPage() {
   return (
@@ -15,7 +15,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Reports Section */}
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-6">
             <ReportSubmission />

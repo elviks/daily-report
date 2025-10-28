@@ -277,6 +277,24 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
 
     const stats = getStats()
 
+    const getWorkingDaysCount = () => {
+        const { daysInMonth } = getDaysInMonth(currentMonth)
+        let count = 0
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+            const hasReport = hasReportForDate(date)
+            const isPast = isPastDate(date)
+
+            // Count as working day if it's a past/current date AND has a report
+            if (!isFutureDate(date) && hasReport) {
+                count++
+            }
+        }
+
+        return count
+    }
+
     if (loading) {
         return (
             <Card className="border-0 shadow-none">
@@ -333,7 +351,7 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                     </div>
 
                     {/* Legend */}
-                    <div className="flex items-center gap-6 text-xs font-light text-gray-700">
+                    <div className="flex items-center gap-6 text-xs font-light text-gray-700 mb-6">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-black border-2 border-black rounded-sm flex items-center justify-center">
                                 <CheckCircle className="h-2 w-2 text-white" />
@@ -353,6 +371,24 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-white border border-gray-100 rounded-sm"></div>
                             <span>Future</span>
+                        </div>
+                    </div>
+
+                    {/* Working Days Summary */}
+                    <div className="border-t border-gray-200 pt-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center border border-green-200">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-gray-600">Working Days This Month</div>
+                                    <div className="text-2xl font-bold text-green-600">{getWorkingDaysCount()} days</div>
+                                </div>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                                {getMonthName(currentMonth)}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -396,7 +432,7 @@ export function UserCalendar({ userId = "1", userName = "Alex Morgan" }: UserCal
                                         <TextWithLinks text={selectedReport.content} />
                                     </div>
                                 </div>
-                                
+
                                 {/* Photos Section */}
                                 {selectedReport.photos && selectedReport.photos.length > 0 && (
                                     <div className="mt-4">

@@ -26,8 +26,15 @@ export function AdminDashboard() {
     activeUsers: 0,
   })
 
+  const [activeTab, setActiveTab] = useState("reports")
+
   useEffect(() => {
     fetchStats()
+    // Load saved tab from localStorage
+    const savedTab = localStorage.getItem("adminActiveTab")
+    if (savedTab) {
+      setActiveTab(savedTab)
+    }
   }, [])
 
   const fetchStats = async () => {
@@ -152,33 +159,40 @@ export function AdminDashboard() {
         </CardHeader>
 
         <CardContent className="p-0">
-          <Tabs defaultValue="reports" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              setActiveTab(value)
+              localStorage.setItem("adminActiveTab", value)
+            }}
+            className="w-full"
+          >
             <div className="px-6 pt-6">
-              <TabsList className="flex w-full bg-slate-100/50 rounded-xl p-1">
+              <TabsList className="grid w-full grid-cols-4 bg-slate-100/50 rounded-xl p-1">
                 <TabsTrigger
                   value="reports"
-                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   All Reports
                 </TabsTrigger>
                 <TabsTrigger
                   value="submit"
-                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
                   Submit for Employee
                 </TabsTrigger>
                 <TabsTrigger
                   value="users"
-                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   User Management
                 </TabsTrigger>
                 <TabsTrigger
                   value="calender"
-                  className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-slate-900 rounded-lg transition-all duration-200"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   Work Calender

@@ -18,15 +18,15 @@ export default function HomePage() {
             ) : (
               <RegisterCompanyForm />
             )}
-            
+
             {/* Toggle Button */}
             <div className="mt-6 text-center">
               <button
                 onClick={() => setShowLogin(!showLogin)}
                 className="text-blue-500 hover:text-blue-600 font-medium text-sm"
               >
-                {showLogin 
-                  ? "Don't have a company account? Register here" 
+                {showLogin
+                  ? "Don't have a company account? Register here"
                   : "Already have an account? Sign in here"
                 }
               </button>

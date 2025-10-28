@@ -5,9 +5,13 @@ import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Mail, Building, Calendar, Phone, ArrowLeft, User } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Mail, Building, Calendar, Phone, ArrowLeft, User, Edit } from "lucide-react"
 import { UserCalendar } from "@/components/user-calendar"
+import { toast } from "sonner"
 import Link from "next/link"
 
 interface UserInterface {
@@ -28,6 +32,17 @@ export default function UserPage() {
     const router = useRouter()
     const [user, setUser] = useState<UserInterface | null>(null)
     const [loading, setLoading] = useState(true)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [editForm, setEditForm] = useState({
+        name: "",
+        email: "",
+        department: "",
+        phone: ""
+    })
+    const [overridePassword, setOverridePassword] = useState("")
+    const [pincode, setPincode] = useState("")
+    const [pincodeError, setPincodeError] = useState("")
+    const [isSaving, setIsSaving] = useState(false)
 
     useEffect(() => {
         if (params.id) {
@@ -77,6 +92,85 @@ export default function UserPage() {
             month: "short",
             day: "numeric",
         })
+    }
+
+    const handleEditClick = () => {
+        if (user) {
+            setEditForm({
+                name: user.name,
+                email: user.email,
+                department: user.department,
+                phone: user.phone || ""
+            })
+            setOverridePassword("")
+            setPincode("")
+            setPincodeError("")
+            setIsEditDialogOpen(true)
+        }
+    }
+
+    const handleSaveEdit = async () => {
+        try {
+            setIsSaving(true)
+            setPincodeError("")
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                toast.error("Please login first")
+                return
+            }
+
+            // If password override is provided, PIN code is required
+            if (overridePassword && !pincode.trim()) {
+                setPincodeError("PIN code is required when overriding password")
+                setIsSaving(false)
+                return
+            }
+
+            // If PIN is provided, it must be valid even if password is empty
+            if (pincode.trim() && !overridePassword) {
+                setPincodeError("Password must be provided when entering PIN code")
+                setIsSaving(false)
+                return
+            }
+
+            const response = await fetch(`/api/admin/users/${params.id}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    ...editForm,
+                    ...(overridePassword && { password: overridePassword, pincode: pincode.trim() })
+                })
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                if (overridePassword) {
+                    toast.success("User information and password updated successfully")
+                } else {
+                    toast.success("User information updated successfully")
+                }
+                setUser(prev => prev ? { ...prev, ...editForm } : null)
+                setOverridePassword("")
+                setPincode("")
+                setIsEditDialogOpen(false)
+            } else {
+                // Check if it's a PIN code error
+                if (response.status === 403 || data.error?.toLowerCase().includes("pin")) {
+                    setPincodeError(data.error || "Invalid PIN code")
+                }
+                toast.error(data.error || "Failed to update user")
+            }
+        } catch (error) {
+            console.error("Error updating user:", error)
+            toast.error("Failed to update user")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     if (loading) {
@@ -195,12 +289,21 @@ export default function UserPage() {
                 {/* User Details Card */}
                 <Card className="border-2 border-gray-200 bg-white">
                     <CardHeader className="bg-gray-50 border-b border-gray-200 pb-4">
-                        <CardTitle className="flex items-center gap-2 text-lg font-bold text-black">
-                            <div className="p-1.5 bg-black ">
-                                <User className="h-4 w-4 text-white" />
-                            </div>
-                            Contact Information
-                        </CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2 text-lg font-bold text-black">
+                                <div className="p-1.5 bg-black ">
+                                    <User className="h-4 w-4 text-white" />
+                                </div>
+                                Contact Information
+                            </CardTitle>
+                            <Button
+                                onClick={handleEditClick}
+                                className="bg-black hover:bg-gray-800 text-white px-4 py-2"
+                            >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="grid gap-4 md:grid-cols-2">
@@ -263,6 +366,115 @@ export default function UserPage() {
                     <UserCalendar userId={user.id} userName={user.name} />
                 </div>
             </div>
+
+            {/* Edit User Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit User Information</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                id="name"
+                                value={editForm.name}
+                                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={editForm.email}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="department">Department</Label>
+                            <Input
+                                id="department"
+                                value={editForm.department}
+                                onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="phone">Phone</Label>
+                            <Input
+                                id="phone"
+                                type="tel"
+                                value={editForm.phone}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Password Override Section */}
+                    <div className="border-t pt-4 space-y-4">
+                        <div>
+                            <Label className="text-sm font-semibold text-gray-800">Password Override (Optional)</Label>
+                            <p className="text-xs text-gray-500 mt-1 mb-3">
+                                Leave empty to keep current password. If you want to override, you must provide both the new password and PIN code.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="overridePassword">New Password</Label>
+                                <Input
+                                    id="overridePassword"
+                                    type="password"
+                                    placeholder="Enter new password"
+                                    value={overridePassword}
+                                    onChange={(e) => {
+                                        setOverridePassword(e.target.value)
+                                        setPincodeError("")
+                                    }}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="pincode">Admin PIN Code</Label>
+                                <Input
+                                    id="pincode"
+                                    type="password"
+                                    placeholder="Enter admin PIN"
+                                    value={pincode}
+                                    onChange={(e) => {
+                                        setPincode(e.target.value)
+                                        setPincodeError("")
+                                    }}
+                                    className={`mt-1 ${pincodeError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                                />
+                                {pincodeError && (
+                                    <p className="text-xs text-red-600 mt-1">{pincodeError}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsEditDialogOpen(false)}
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleSaveEdit}
+                            disabled={isSaving}
+                            className="bg-black hover:bg-gray-800 text-white"
+                        >
+                            {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -69,7 +69,7 @@ export function WorkCalendar() {
 
             if (usersData.users) {
                 // Filter out admin users, only show regular users
-                const regularUsers = usersData.users.filter((user: User) => 
+                const regularUsers = usersData.users.filter((user: User) =>
                     user.role === 'user' || (!user.role && !user.isAdmin)
                 );
                 setUsers(regularUsers);
@@ -89,12 +89,12 @@ export function WorkCalendar() {
         setLoadingReport(true)
         try {
             const token = localStorage.getItem("token");
-        const response = await fetch(`/api/reports/user/${userId}/date/${date}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        })
+            const response = await fetch(`/api/reports/user/${userId}/date/${date}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            })
             const data = await response.json()
 
             if (data.report) {
@@ -208,6 +208,26 @@ export function WorkCalendar() {
         }
     }
 
+    const getWorkingDaysCount = (userId: string, month: Date) => {
+        const daysInMonth = getDaysInMonth(month)
+        let count = 0
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const status = getStatusForDate(userId, month, day)
+            if (status === 'present') {
+                count++
+            }
+        }
+
+        return count
+    }
+
+    const getTotalWorkingDays = () => {
+        return users.reduce((total, user) => {
+            return total + getWorkingDaysCount(user.id, currentMonth)
+        }, 0)
+    }
+
     if (loading) {
         return (
             <Card className="border-0 shadow-none">
@@ -253,12 +273,12 @@ export function WorkCalendar() {
                     </div>
 
                     {/* Calendar Table */}
-                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <div className="overflow-x-auto overflow-y-auto rounded-lg border border-gray-200" style={{ maxHeight: '600px' }}>
                         <table className="w-full border-collapse bg-white">
                             {/* Date Header Row */}
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <th className="text-left font-semibold text-gray-700 p-4 min-w-[150px] border-r border-gray-200">
+                                    <th className="text-left font-semibold text-gray-700 p-4 min-w-[150px] border-r border-gray-200 bg-gray-50">
                                         <div className="flex items-center gap-2">
                                             <Users className="h-4 w-4 text-gray-600" />
                                             Team Members
@@ -268,7 +288,7 @@ export function WorkCalendar() {
                                         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
                                         const shortMonthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                         return (
-                                            <th key={index} className="text-center font-semibold text-gray-700 p-3 min-w-[50px] border-r border-gray-200 last:border-r-0">
+                                            <th key={index} className="text-center font-semibold text-gray-700 p-3 min-w-[50px] border-r border-gray-200 last:border-r-0 bg-gray-50">
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-sm font-bold text-gray-700">{shortMonthDay}</span>
                                                 </div>
@@ -289,9 +309,17 @@ export function WorkCalendar() {
                                                         {user.name.charAt(0).toUpperCase()}
                                                     </span>
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <div className="font-medium">{user.name}</div>
                                                     <div className="text-xs text-gray-500">{user.department}</div>
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                                                            <Check className="h-2 w-2 text-green-600" />
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-green-600">
+                                                            {getWorkingDaysCount(user.id, currentMonth)} days
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -363,7 +391,7 @@ export function WorkCalendar() {
                     </div>
 
                     {/* Summary Stats */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4 text-gray-600" />
@@ -374,7 +402,7 @@ export function WorkCalendar() {
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-2">
                                 <Check className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-medium text-gray-800">Reports This Month</span>
+                                <span className="text-sm font-medium text-gray-800">Total Reports</span>
                             </div>
                             <div className="text-2xl font-bold text-gray-900 mt-1">
                                 {reports.filter(report => {
@@ -383,6 +411,15 @@ export function WorkCalendar() {
                                         reportDate.getFullYear() === currentMonth.getFullYear()
                                 }).length}
                             </div>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Check className="h-2 w-2 text-green-600" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-800">Total Working Days</span>
+                            </div>
+                            <div className="text-2xl font-bold text-green-600 mt-1">{getTotalWorkingDays()}</div>
                         </div>
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-2">
@@ -445,7 +482,7 @@ export function WorkCalendar() {
                                 <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
                                     <TextWithLinks text={selectedReport.content} />
                                 </div>
-                                
+
                                 {/* Photos Section */}
                                 {selectedReport.photos && selectedReport.photos.length > 0 && (
                                     <div className="mt-4">

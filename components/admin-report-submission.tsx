@@ -25,7 +25,6 @@ interface SubmittedReport {
   userName: string
   userEmail: string
   submittedAt: string
-  adminReason: string
 }
 
 export function AdminReportSubmission() {
@@ -33,7 +32,8 @@ export function AdminReportSubmission() {
   const [selectedUserId, setSelectedUserId] = useState("")
   const [selectedDate, setSelectedDate] = useState("")
   const [reportContent, setReportContent] = useState("")
-  const [reason, setReason] = useState("")
+  const [pincode, setPincode] = useState("")
+  const [pincodeError, setPincodeError] = useState("")
   const [loading, setLoading] = useState(false)
   const [fetchingUsers, setFetchingUsers] = useState(true)
   const [recentSubmissions, setRecentSubmissions] = useState<SubmittedReport[]>([])
@@ -91,10 +91,13 @@ export function AdminReportSubmission() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedUserId || !selectedDate || !reportContent.trim()) {
+    // Clear previous PIN error
+    setPincodeError("")
+
+    if (!selectedUserId || !selectedDate || !reportContent.trim() || !pincode.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including the PIN code",
         variant: "destructive"
       })
       return
@@ -122,7 +125,7 @@ export function AdminReportSubmission() {
           userId: selectedUserId,
           date: selectedDate,
           content: reportContent.trim(),
-          reason: reason.trim() || "Submitted by admin on behalf of employee"
+          pincode: pincode.trim()
         })
       })
 
@@ -143,9 +146,15 @@ export function AdminReportSubmission() {
         // Reset form
         setSelectedUserId("")
         setReportContent("")
-        setReason("")
+        setPincode("")
+        setPincodeError("")
         // Keep the same date for convenience
       } else {
+        // Check if it's a PIN code error
+        if (response.status === 403 || data.error?.toLowerCase().includes("pin")) {
+          setPincodeError(data.error || "Invalid PIN code")
+        }
+
         toast({
           title: "Error",
           description: data.error || "Failed to submit report",
@@ -254,26 +263,42 @@ export function AdminReportSubmission() {
               </div>
             </div>
 
-            {/* Reason */}
+            {/* PIN Code */}
             <div className="space-y-2">
-              <Label htmlFor="reason" className="text-sm font-medium text-slate-700">
-                Reason for Admin Submission
+              <Label htmlFor="pincode" className="text-sm font-medium text-slate-700 flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4" />
+                <span>Admin PIN Code *</span>
               </Label>
-              <Textarea
-                id="reason"
-                placeholder="Optional: Explain why you're submitting this report on behalf of the employee..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={2}
-                className="resize-none"
+              <Input
+                id="pincode"
+                type="password"
+                placeholder="Enter the admin PIN code to authorize submission..."
+                value={pincode}
+                onChange={(e) => {
+                  setPincode(e.target.value)
+                  setPincodeError("") // Clear error when user types
+                }}
+                className={`w-full ${pincodeError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                maxLength={10}
               />
+              {pincodeError ? (
+                <div className="text-xs text-red-600 flex items-center space-x-1 bg-red-50 p-2 rounded border border-red-200">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{pincodeError}</span>
+                </div>
+              ) : (
+                <div className="text-xs text-amber-600 flex items-center space-x-1">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>PIN code is required for security verification</span>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={loading || !selectedUserId || !selectedDate || !reportContent.trim()}
+                disabled={loading || !selectedUserId || !selectedDate || !reportContent.trim() || !pincode.trim()}
                 className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white px-6 py-2"
               >
                 {loading ? (
@@ -316,8 +341,7 @@ export function AdminReportSubmission() {
                       <div>{new Date(report.submittedAt).toLocaleTimeString()}</div>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-700 mb-2">{report.content}</p>
-                  <p className="text-xs text-slate-500 italic">{report.adminReason}</p>
+                  <p className="text-sm text-slate-700">{report.content}</p>
                 </div>
               ))}
             </div>
