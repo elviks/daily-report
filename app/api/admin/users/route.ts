@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
           const { request: authenticatedRequest } = authResult;
           const tenantId = getTenantIdFromRequest(authenticatedRequest);
-          
+
           if (!tenantId) {
                return NextResponse.json(
                     { error: "Tenant information not found" },
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
           // Get users for this specific tenant only
           const users = await findUsersByTenant(new ObjectId(tenantId));
 
-          return NextResponse.json({ 
+          return NextResponse.json({
                users: users.map(user => ({
                     id: user._id?.toString(),
                     name: user.name,
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
                     phone: user.phone,
                     profileImage: user.profileImage,
                     isAdmin: user.isAdmin,
+                    isActive: user.isActive,
                     createdAt: user.createdAt
                }))
           });
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
           const { request: authenticatedRequest } = authResult;
           const tenantId = getTenantIdFromRequest(authenticatedRequest);
-          
+
           if (!tenantId) {
                return NextResponse.json(
                     { error: "Tenant information not found" },
@@ -80,10 +81,10 @@ export async function POST(request: NextRequest) {
           // Get the current user's role to determine what roles they can assign
           const currentUser = authResult.user;
           console.log("Current user role:", currentUser.role);
-          
+
           // Determine the role to assign based on current user's permissions
           let userRole = "user"; // default
-          
+
           if (currentUser.role === "superadmin") {
                // Superadmin can assign any role
                if (role === "superadmin") {
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
                     userRole = "user";
                }
           }
-          
+
           console.log("Final role assignment:", userRole);
 
 

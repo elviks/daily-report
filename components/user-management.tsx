@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Search, Trash2 } from "lucide-react"
+import { Search, Trash2, ToggleLeft, ToggleRight } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -23,6 +23,7 @@ interface UserInterface {
   lastReportDate?: string
   totalReports: number
   profileImage?: string
+  isActive?: boolean
 }
 
 export function UserManagement() {
@@ -33,6 +34,7 @@ export function UserManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<UserInterface | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [toggling, setToggling] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -126,6 +128,43 @@ export function UserManagement() {
     }
   }
 
+  const handleToggleUser = async (e: React.MouseEvent, user: UserInterface) => {
+    e.stopPropagation()
+
+    setToggling(user.id)
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
+      const response = await fetch(`/api/admin/users/${user.id}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (response.ok) {
+        // Update user in local state
+        setUsers(prev => prev.map(u =>
+          u.id === user.id
+            ? { ...u, isActive: !u.isActive }
+            : u
+        ))
+      } else {
+        const error = await response.json()
+        console.error('Failed to toggle user:', error)
+      }
+    } catch (error) {
+      console.error('Error toggling user:', error)
+    } finally {
+      setToggling(null)
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -196,6 +235,27 @@ export function UserManagement() {
                         Admin
                       </Badge>
                     )}
+                    {user.isActive === false && (
+                      <Badge variant="secondary" className="text-xs bg-gray-500 text-white">
+                        Disabled
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={(e) => handleToggleUser(e, user)}
+                      disabled={toggling === user.id || user.role === "superadmin"}
+                      title={user.role === "superadmin" ? "Cannot disable admin users" : (user.isActive === false ? "Enable user" : "Disable user")}
+                    >
+                      {toggling === user.id ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                      ) : user.isActive === false ? (
+                        <ToggleLeft className="h-4 w-4" />
+                      ) : (
+                        <ToggleRight className="h-4 w-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

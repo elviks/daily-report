@@ -8,24 +8,15 @@ import {
      CardHeader,
      CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-     Select,
-     SelectContent,
-     SelectItem,
-     SelectTrigger,
-     SelectValue,
-} from "@/components/ui/select";
-import {
-     Search,
-     Download,
      Calendar,
      User,
      ChevronDown,
      ChevronUp,
+     Clock,
 } from "lucide-react";
 import { TextWithLinks } from "@/components/ui/text-with-links";
 
@@ -43,43 +34,13 @@ interface Report {
 
 export function AllReports() {
      const [reports, setReports] = useState<Report[]>([]);
-     const [filteredReports, setFilteredReports] = useState<
-          Report[]
-     >([]);
-     const [displayedReports, setDisplayedReports] = useState<Report[]>([]);
      const [loading, setLoading] = useState(true);
      const [error, setError] = useState<string | null>(null);
-     const [searchTerm, setSearchTerm] = useState("");
-     const [dateFilter, setDateFilter] = useState("");
-     const [departmentFilter, setDepartmentFilter] =
-          useState("");
-     const [departments, setDepartments] = useState<
-          string[]
-     >([]);
-     const [visibleCount, setVisibleCount] = useState(4);
      const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
 
      useEffect(() => {
           fetchReports();
      }, []);
-
-     useEffect(() => {
-          filterReports();
-     }, [
-          reports,
-          searchTerm,
-          dateFilter,
-          departmentFilter,
-     ]);
-
-     useEffect(() => {
-          // Update displayed reports when filtered reports change
-          setDisplayedReports(filteredReports.slice(0, visibleCount));
-          // Reset visible count when filters change
-          setVisibleCount(4);
-          // Reset expanded reports when filters change
-          setExpandedReports(new Set());
-     }, [filteredReports]);
 
      const fetchReports = async () => {
           try {
@@ -110,85 +71,16 @@ export function AllReports() {
 
                if (response.ok && data.reports) {
                     setReports(data.reports);
-                    // Extract unique departments
-                    const uniqueDepartments = [
-                         ...new Set(
-                              data.reports.map(
-                                   (r: Report) =>
-                                        r.department
-                              )
-                         ),
-                    ] as string[];
-                    setDepartments(uniqueDepartments);
                } else {
                     setError(data.error || "Failed to fetch reports");
                }
           } catch (error) {
-               console.error(
-                    "Error fetching reports:",
-                    error
-               );
-               // Set empty arrays to prevent undefined errors
+               console.error("Error fetching reports:", error);
                setReports([]);
-               setDepartments([]);
           } finally {
                setLoading(false);
           }
      };
-
-     const filterReports = () => {
-          if (!reports) {
-               setFilteredReports([]);
-               return;
-          }
-
-          let filtered = reports;
-
-          if (searchTerm) {
-               filtered = filtered.filter(
-                    (report) =>
-                         report.userName
-                              .toLowerCase()
-                              .includes(
-                                   searchTerm.toLowerCase()
-                              ) ||
-                         report.userEmail
-                              .toLowerCase()
-                              .includes(
-                                   searchTerm.toLowerCase()
-                              ) ||
-                         report.content
-                              .toLowerCase()
-                              .includes(
-                                   searchTerm.toLowerCase()
-                              )
-               );
-          }
-
-          if (dateFilter) {
-               filtered = filtered.filter(
-                    (report) => report.date === dateFilter
-               );
-          }
-
-          if (departmentFilter) {
-               filtered = filtered.filter(
-                    (report) =>
-                         report.department ===
-                         departmentFilter
-               );
-          }
-
-          setFilteredReports(filtered);
-     };
-
-     const loadMoreReports = () => {
-          const newVisibleCount = visibleCount + 4;
-          setVisibleCount(newVisibleCount);
-          setDisplayedReports(filteredReports.slice(0, newVisibleCount));
-     };
-
-     const hasMoreReports = displayedReports.length < filteredReports.length;
 
      const toggleReportExpansion = (reportId: string) => {
           setExpandedReports(prev => {
@@ -219,6 +111,28 @@ export function AllReports() {
           );
      };
 
+     const formatTime = (dateString: string) => {
+          return new Date(dateString).toLocaleTimeString(
+               "en-US",
+               {
+                    hour: "2-digit",
+                    minute: "2-digit",
+               }
+          );
+     };
+
+     // Get today's and yesterday's dates
+     const today = new Date();
+     const yesterday = new Date(today);
+     yesterday.setDate(yesterday.getDate() - 1);
+
+     const todayStr = today.toISOString().split('T')[0];
+     const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+     // Filter reports for today and yesterday
+     const todayReports = reports.filter(report => report.date === todayStr);
+     const yesterdayReports = reports.filter(report => report.date === yesterdayStr);
+
      if (loading) {
           return (
                <Card>
@@ -244,202 +158,158 @@ export function AllReports() {
           );
      }
 
+     const ReportCard = ({ report }: { report: Report }) => (
+          <div className="border rounded-lg p-4 space-y-3 hover:bg-gray-50 transition-colors">
+               <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                         <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                   {report.userName}
+                              </span>
+                         </div>
+                         <Badge variant="secondary">
+                              {report.department}
+                         </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                         <Clock className="h-4 w-4" />
+                         {formatTime(report.createdAt)}
+                    </div>
+               </div>
+
+               <div className="text-sm text-muted-foreground">
+                    {report.userEmail}
+               </div>
+
+               <div className="text-sm">
+                    <div>
+                         {expandedReports.has(report.id) ? (
+                              <div>
+                                   <TextWithLinks text={report.content} />
+                              </div>
+                         ) : (
+                              <div className="line-clamp-3">
+                                   <TextWithLinks text={report.content} />
+                              </div>
+                         )}
+                    </div>
+                    {isReportLong(report.content) && (
+                         <button
+                              onClick={() => toggleReportExpansion(report.id)}
+                              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-2 transition-colors cursor-pointer"
+                         >
+                              {expandedReports.has(report.id) ? (
+                                   <>
+                                        <ChevronUp className="h-3 w-3" />
+                                        <span>See Less</span>
+                                   </>
+                              ) : (
+                                   <>
+                                        <ChevronDown className="h-3 w-3" />
+                                        <span>See More</span>
+                                   </>
+                              )}
+                         </button>
+                    )}
+               </div>
+
+               <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div>
+                         Submitted: {new Date(report.createdAt).toLocaleString()}
+                    </div>
+                    {report.createdAt !== report.updatedAt && (
+                         <Badge variant="outline" className="text-xs">
+                              Updated: {new Date(report.updatedAt).toLocaleString()}
+                         </Badge>
+                    )}
+               </div>
+          </div>
+     );
+
      return (
           <Card>
                <CardHeader>
                     <div className="flex items-center justify-between">
                          <div>
-                              <CardTitle>
-                                   All Reports
-                              </CardTitle>
+                              <CardTitle>All Reports</CardTitle>
                               <CardDescription>
-                                   View and manage all
-                                   submitted daily reports (
-                                   {displayedReports?.length || 0} of {filteredReports?.length || 0}
-                                   reports shown)
+                                   View today's and yesterday's daily reports
                               </CardDescription>
                          </div>
                     </div>
                </CardHeader>
-               <CardContent className="space-y-4">
-                    {/* Filters */}
-                    <div className="flex flex-col sm:flex-row gap-4">
-                         <div className="relative flex-1">
-                              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                   placeholder="Search by name, email, or content..."
-                                   value={searchTerm}
-                                   onChange={(e) =>
-                                        setSearchTerm(
-                                             e.target.value
-                                        )
-                                   }
-                                   className="pl-10"
-                              />
-                         </div>
-                         <Input
-                              type="date"
-                              value={dateFilter}
-                              onChange={(e) =>
-                                   setDateFilter(
-                                        e.target.value
-                                   )
-                              }
-                              className="w-full sm:w-auto"
-                         />
-                         <Select
-                              value={departmentFilter}
-                              onValueChange={
-                                   setDepartmentFilter
-                              }
-                         >
-                              <SelectTrigger className="w-full sm:w-[180px]">
-                                   <SelectValue placeholder="All Departments" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                   <SelectItem value="all">
-                                        All Departments
-                                   </SelectItem>
-                                   {departments.map(
-                                        (dept) => (
-                                             <SelectItem
-                                                  key={dept}
-                                                  value={
-                                                       dept
-                                                  }
-                                             >
-                                                  {dept}
-                                             </SelectItem>
-                                        )
-                                   )}
-                              </SelectContent>
-                         </Select>
-                    </div>
+               <CardContent>
+                    <Tabs defaultValue="today" className="w-full">
+                         <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="today" className="flex items-center gap-2">
+                                   <Calendar className="h-4 w-4" />
+                                   Today ({todayReports.length})
+                              </TabsTrigger>
+                              <TabsTrigger value="yesterday" className="flex items-center gap-2">
+                                   <Calendar className="h-4 w-4" />
+                                   Yesterday ({yesterdayReports.length})
+                              </TabsTrigger>
+                         </TabsList>
 
-                    {/* Reports List */}
-                    <ScrollArea className="h-[600px]">
-                         {filteredReports.length === 0 ? (
-                              <div className="text-center text-muted-foreground py-8">
-                                   No reports found matching
-                                   your criteria
-                              </div>
-                         ) : (
+                         <TabsContent value="today" className="mt-6">
                               <div className="space-y-4">
-                                   {displayedReports?.map(
-                                        (report) => (
-                                             <div
-                                                  key={
-                                                       report.id
-                                                  }
-                                                  className="border p-4 space-y-3"
-                                             >
-                                                  <div className="flex items-center justify-between">
-                                                       <div className="flex items-center gap-3">
-                                                            <div className="flex items-center gap-2">
-                                                                 <User className="h-4 w-4 text-muted-foreground" />
-                                                                 <span className="font-medium">
-                                                                      {
-                                                                           report.userName
-                                                                      }
-                                                                 </span>
-                                                            </div>
-                                                            <Badge variant="secondary">
-                                                                 {
-                                                                      report.department
-                                                                 }
-                                                            </Badge>
-                                                       </div>
-                                                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Calendar className="h-4 w-4" />
-                                                            {formatDate(
-                                                                 report.date
-                                                            )}
-                                                       </div>
-                                                  </div>
+                                   <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                             <Badge variant="outline" className="text-green-600 border-green-600">
+                                                  {formatDate(todayStr)}
+                                             </Badge>
+                                             <span className="text-sm text-muted-foreground">
+                                                  {todayReports.length} report{todayReports.length !== 1 ? 's' : ''} submitted
+                                             </span>
+                                        </div>
+                                   </div>
 
-                                                  <div className="text-sm text-muted-foreground">
-                                                       {
-                                                            report.userEmail
-                                                       }
-                                                  </div>
-
-                                                  <div className="text-sm">
-                                                       <div>
-                                                            {expandedReports.has(report.id) ? (
-                                                                 <div>
-                                                                      <TextWithLinks text={report.content} />
-                                                                 </div>
-                                                            ) : (
-                                                                 <div className="line-clamp-3">
-                                                                      <TextWithLinks text={report.content} />
-                                                                 </div>
-                                                            )}
-                                                       </div>
-                                                       {isReportLong(report.content) && (
-                                                            <button
-                                                                 onClick={() => toggleReportExpansion(report.id)}
-                                                                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-2 transition-colors cursor-pointer"
-                                                            >
-                                                                 {expandedReports.has(report.id) ? (
-                                                                      <>
-                                                                           <ChevronUp className="h-3 w-3" />
-                                                                           <span>See Less</span>
-                                                                      </>
-                                                                 ) : (
-                                                                      <>
-                                                                           <ChevronDown className="h-3 w-3" />
-                                                                           <span>See More</span>
-                                                                      </>
-                                                                 )}
-                                                            </button>
-                                                       )}
-                                                  </div>
-
-                                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                       <div>
-                                                            Submitted:{" "}
-                                                            {new Date(
-                                                                 report.createdAt
-                                                            ).toLocaleString()}
-                                                       </div>
-                                                       {report.createdAt !==
-                                                            report.updatedAt && (
-                                                                 <Badge
-                                                                      variant="outline"
-                                                                      className="text-xs"
-                                                                 >
-                                                                      Updated:{" "}
-                                                                      {new Date(
-                                                                           report.updatedAt
-                                                                      ).toLocaleString()}
-                                                                 </Badge>
-                                                            )}
-                                                  </div>
+                                   {todayReports.length === 0 ? (
+                                        <div className="text-center text-muted-foreground py-8">
+                                             No reports submitted today
+                                        </div>
+                                   ) : (
+                                        <ScrollArea className="h-[500px]">
+                                             <div className="space-y-4">
+                                                  {todayReports.map((report) => (
+                                                       <ReportCard key={report.id} report={report} />
+                                                  ))}
                                              </div>
-                                        )
+                                        </ScrollArea>
                                    )}
                               </div>
-                         )}
-                    </ScrollArea>
+                         </TabsContent>
 
-                    {/* Load More Button */}
-                    {hasMoreReports ? (
-                         <div className="flex justify-center pt-4">
-                              <Button
-                                   onClick={loadMoreReports}
-                                   variant="outline"
-                                   className="px-8"
-                              >
-                                   Load More Reports ({filteredReports.length - displayedReports.length} remaining)
-                              </Button>
-                         </div>
-                    ) : filteredReports.length > 4 ? (
-                         <div className="flex justify-center pt-4">
-                              <div className="text-sm text-muted-foreground">
-                                   All {filteredReports.length} reports loaded
+                         <TabsContent value="yesterday" className="mt-6">
+                              <div className="space-y-4">
+                                   <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                             <Badge variant="outline" className="text-blue-600 border-blue-600">
+                                                  {formatDate(yesterdayStr)}
+                                             </Badge>
+                                             <span className="text-sm text-muted-foreground">
+                                                  {yesterdayReports.length} report{yesterdayReports.length !== 1 ? 's' : ''} submitted
+                                             </span>
+                                        </div>
+                                   </div>
+
+                                   {yesterdayReports.length === 0 ? (
+                                        <div className="text-center text-muted-foreground py-8">
+                                             No reports submitted yesterday
+                                        </div>
+                                   ) : (
+                                        <ScrollArea className="h-[500px]">
+                                             <div className="space-y-4">
+                                                  {yesterdayReports.map((report) => (
+                                                       <ReportCard key={report.id} report={report} />
+                                                  ))}
+                                             </div>
+                                        </ScrollArea>
+                                   )}
                               </div>
-                         </div>
-                    ) : null}
+                         </TabsContent>
+                    </Tabs>
                </CardContent>
           </Card>
      );

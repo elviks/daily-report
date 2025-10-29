@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
           const { request: authenticatedRequest } = authResult;
           const tenantId = getTenantIdFromRequest(authenticatedRequest);
-          
+
           if (!tenantId) {
                return NextResponse.json(
                     { error: "Tenant information not found" },
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
           // Get users for this specific tenant only
           const users = await findUsersByTenant(new ObjectId(tenantId));
 
-          return NextResponse.json({ 
+          return NextResponse.json({
                users: users.map(user => ({
                     id: user._id?.toString(),
                     name: user.name,
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
                     phone: user.phone,
                     profileImage: user.profileImage,
                     isAdmin: user.isAdmin,
+                    isActive: user.isActive,
                     createdAt: user.createdAt
                }))
           });

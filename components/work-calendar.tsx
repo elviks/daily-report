@@ -15,6 +15,7 @@ interface User {
     role: string
     department: string
     isAdmin?: boolean
+    isActive?: boolean
 }
 
 interface Report {
@@ -68,9 +69,10 @@ export function WorkCalendar() {
             const reportsData = await reportsResponse.json();
 
             if (usersData.users) {
-                // Filter out admin users, only show regular users
+                // Filter out admin users and disabled users, only show active regular users
                 const regularUsers = usersData.users.filter((user: User) =>
-                    user.role === 'user' || (!user.role && !user.isAdmin)
+                    (user.role === 'user' || (!user.role && !user.isAdmin)) &&
+                    user.isActive !== false
                 );
                 setUsers(regularUsers);
             }

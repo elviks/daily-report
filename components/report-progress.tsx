@@ -31,11 +31,11 @@ interface ReportProgressProps {
   refreshInterval?: number
 }
 
-export function ReportProgress({ 
-  className = "", 
-  onError, 
-  autoRefresh = false, 
-  refreshInterval = 30000 
+export function ReportProgress({
+  className = "",
+  onError,
+  autoRefresh = false,
+  refreshInterval = 30000
 }: ReportProgressProps) {
   const [progress, setProgress] = useState<ProgressData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,7 +57,7 @@ export function ReportProgress({
         setLoading(true)
       }
       setError(null)
-      
+
       const token = localStorage.getItem("token")
       if (!token) {
         throw new Error("Authentication required")
@@ -94,12 +94,12 @@ export function ReportProgress({
   // Auto-refresh functionality
   useEffect(() => {
     fetchProgress()
-    
+
     if (autoRefresh && refreshInterval > 0) {
       const interval = setInterval(() => {
         fetchProgress()
       }, refreshInterval)
-      
+
       return () => clearInterval(interval)
     }
   }, [fetchProgress, autoRefresh, refreshInterval])
@@ -108,7 +108,7 @@ export function ReportProgress({
     if (!progress) return null
 
     const percentage = progress.progressPercentage
-    
+
     const getStatusConfig = (percentage: number) => {
       if (percentage >= 90) return {
         color: "text-green-600 dark:text-green-400",
@@ -120,7 +120,7 @@ export function ReportProgress({
         circleColor: "text-green-500"
       }
       if (percentage >= 75) return {
-        color: "text-blue-600 dark:text-blue-400", 
+        color: "text-blue-600 dark:text-blue-400",
         bgColor: "bg-blue-50 dark:bg-blue-900/20",
         borderColor: "border-blue-200 dark:border-blue-800",
         text: "Good Progress",
@@ -130,7 +130,7 @@ export function ReportProgress({
       }
       if (percentage >= 50) return {
         color: "text-yellow-600 dark:text-yellow-400",
-        bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
+        bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
         borderColor: "border-yellow-200 dark:border-yellow-800",
         text: "Moderate",
         icon: Clock,
@@ -140,7 +140,7 @@ export function ReportProgress({
       return {
         color: "text-red-600 dark:text-red-400",
         bgColor: "bg-red-50 dark:bg-red-900/20",
-        borderColor: "border-red-200 dark:border-red-800", 
+        borderColor: "border-red-200 dark:border-red-800",
         text: "Needs Attention",
         icon: AlertCircle,
         progressColor: "stroke-red-500",
@@ -157,13 +157,13 @@ export function ReportProgress({
       const now = new Date()
       const diffMs = now.getTime() - date.getTime()
       const diffMins = Math.floor(diffMs / (1000 * 60))
-      
+
       if (diffMins < 1) return "Just now"
       if (diffMins < 60) return `${diffMins}m ago`
-      
+
       const diffHours = Math.floor(diffMins / 60)
       if (diffHours < 24) return `${diffHours}h ago`
-      
+
       const diffDays = Math.floor(diffHours / 24)
       return `${diffDays}d ago`
     } catch {
@@ -177,10 +177,10 @@ export function ReportProgress({
       const now = new Date()
       const diffMs = date.getTime() - now.getTime()
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-      
+
       if (diffHours < 0) return "Overdue"
       if (diffHours < 24) return `${diffHours}h remaining`
-      
+
       const diffDays = Math.floor(diffHours / 24)
       return `${diffDays}d remaining`
     } catch {
@@ -321,7 +321,7 @@ export function ReportProgress({
                     strokeLinecap="round"
                   />
                 </svg>
-                
+
                 {/* Percentage text */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center mt-10">
@@ -331,7 +331,7 @@ export function ReportProgress({
                   </div>
                 </div>
               </div>
-              
+
               {/* Status badge */}
               <div className={`px-4 py-2 rounded-full border ${progressMetrics.borderColor} ${progressMetrics.bgColor} transition-all duration-300`}>
                 <div className="flex items-center space-x-2">

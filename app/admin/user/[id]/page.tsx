@@ -25,6 +25,7 @@ interface UserInterface {
     lastReportDate?: string
     totalReports: number
     profileImage?: string
+    isActive?: boolean
 }
 
 export default function UserPage() {
@@ -275,6 +276,14 @@ export default function UserPage() {
                                 className="bg-black text-white px-4 py-2 text-sm font-bold uppercase tracking-wide"
                             >
                                 Admin
+                            </Badge>
+                        )}
+                        {user.isActive === false && (
+                            <Badge
+                                variant="secondary"
+                                className="bg-gray-500 text-white px-4 py-2 text-sm font-bold uppercase tracking-wide"
+                            >
+                                Disabled
                             </Badge>
                         )}
                         <Badge
