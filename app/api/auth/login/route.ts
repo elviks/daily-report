@@ -146,7 +146,8 @@ export async function POST(request: NextRequest) {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json({
+    // Create response with cookie
+    const response = NextResponse.json({
       message: "Login successful",
       user: userWithoutPassword,
       token,
@@ -156,6 +157,17 @@ export async function POST(request: NextRequest) {
         slug: tenant.slug,
       },
     });
+
+    // Set HTTP-only cookie for middleware authentication
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
