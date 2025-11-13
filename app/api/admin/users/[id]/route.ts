@@ -1,248 +1,308 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { adminAuthMiddleware, getTenantIdFromRequest } from "@/lib/admin-middleware";
+import {
+  adminAuthMiddleware,
+  getTenantIdFromRequest,
+  getUserIdFromRequest,
+} from "@/lib/admin-middleware";
 import { hashPassword } from "@/lib/db";
 
-// Hardcoded PIN code for admin operations
-const ADMIN_PINCODE = "iamadmin";
+// SECURITY: PIN code must be set via environment variable
+// Never use weak or hardcoded PINs in production
+const ADMIN_PINCODE = process.env.ADMIN_PIN_CODE;
+
+if (!ADMIN_PINCODE || ADMIN_PINCODE.length < 12) {
+  console.error(
+    "CRITICAL: ADMIN_PIN_CODE environment variable must be set and at least 12 characters"
+  );
+}
 
 export async function PUT(
-    request: NextRequest,
-    { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
+  try {
+    // Authenticate admin user and get tenant info
+    const authResult = await adminAuthMiddleware(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { request: authenticatedRequest, user: authUser } = authResult;
+    const tenantId = getTenantIdFromRequest(authenticatedRequest);
+    const adminUserId = getUserIdFromRequest(authenticatedRequest);
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "Tenant information not found" },
+        { status: 400 }
+      );
+    }
+
+    const userId = params.id;
+    const body = await request.json();
+    const { name, email, department, phone, password, pincode } = body;
+
+    // Validate required fields
+    if (!name || !email || !department) {
+      return NextResponse.json(
+        { error: "Name, email, and department are required" },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Password override restricted to superadmin only
+    if (password) {
+      // Only superadmin can override passwords
+      if (authUser.role !== "superadmin") {
+        return NextResponse.json(
+          { error: "Only superadmin can override user passwords" },
+          { status: 403 }
+        );
+      }
+
+      if (!ADMIN_PINCODE) {
+        return NextResponse.json(
+          { error: "Admin PIN not configured. Contact system administrator." },
+          { status: 500 }
+        );
+      }
+
+      if (!pincode) {
+        return NextResponse.json(
+          { error: "PIN code is required when overriding password" },
+          { status: 400 }
+        );
+      }
+
+      if (pincode !== ADMIN_PINCODE) {
+        // Log failed PIN attempt
+        console.warn(
+          `Failed PIN attempt by admin ${adminUserId} for user ${userId}`
+        );
+        return NextResponse.json(
+          { error: "Invalid PIN code. Password override denied." },
+          { status: 403 }
+        );
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: "Password must be at least 8 characters long" },
+          { status: 400 }
+        );
+      }
+
+      // Log password override
+      console.warn(
+        `Password override: Admin ${adminUserId} changed password for user ${userId}`
+      );
+    }
+
+    // If PIN is provided without password, reject
+    if (pincode && !password) {
+      return NextResponse.json(
+        { error: "Password must be provided when entering PIN code" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user exists in database and belongs to this tenant
+    let dbUser = null;
+    let userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
+
     try {
-        // Authenticate admin user and get tenant info
-        const authResult = await adminAuthMiddleware(request);
-        if (authResult instanceof NextResponse) {
-            return authResult;
+      const client = await clientPromise;
+      if (client) {
+        const db = client.db("daily-report");
+
+        // Check if user exists in DB and belongs to this tenant
+        if (ObjectId.isValid(userId)) {
+          dbUser = await db.collection("users").findOne({
+            _id: new ObjectId(userId),
+            tenantId: new ObjectId(tenantId),
+          });
+        }
+        if (!dbUser) {
+          dbUser = await db.collection("users").findOne({
+            id: userId,
+            tenantId: new ObjectId(tenantId),
+          });
         }
 
-        const { request: authenticatedRequest } = authResult;
-        const tenantId = getTenantIdFromRequest(authenticatedRequest);
-
-        if (!tenantId) {
-            return NextResponse.json(
-                { error: "Tenant information not found" },
-                { status: 400 }
-            );
+        if (!dbUser) {
+          return NextResponse.json(
+            { error: "User not found in this company" },
+            { status: 404 }
+          );
         }
 
-        const userId = params.id;
-        const body = await request.json();
-        const { name, email, department, phone, password, pincode } = body;
+        // Update user information
+        const updateData: any = {
+          name,
+          email,
+          department,
+          updatedAt: new Date(),
+        };
 
-        // Validate required fields
-        if (!name || !email || !department) {
-            return NextResponse.json(
-                { error: "Name, email, and department are required" },
-                { status: 400 }
-            );
+        if (phone) {
+          updateData.phone = phone;
         }
 
-        // If password override is provided, validate PIN code
+        // If password override is provided, hash and update it
         if (password) {
-            if (!pincode) {
-                return NextResponse.json(
-                    { error: "PIN code is required when overriding password" },
-                    { status: 400 }
-                );
-            }
-            if (pincode !== ADMIN_PINCODE) {
-                return NextResponse.json(
-                    { error: "Invalid PIN code. Password override denied." },
-                    { status: 403 }
-                );
-            }
+          updateData.password = hashPassword(password);
         }
 
-        // If PIN is provided without password, reject
-        if (pincode && !password) {
-            return NextResponse.json(
-                { error: "Password must be provided when entering PIN code" },
-                { status: 400 }
+        if (ObjectId.isValid(userId)) {
+          await db
+            .collection("users")
+            .updateOne(
+              { _id: new ObjectId(userId), tenantId: new ObjectId(tenantId) },
+              { $set: updateData }
             );
-        }
-
-        // Check if user exists in database and belongs to this tenant
-        let dbUser = null;
-        let userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
-
-        try {
-            const client = await clientPromise;
-            if (client) {
-                const db = client.db("daily-report");
-
-                // Check if user exists in DB and belongs to this tenant
-                if (ObjectId.isValid(userId)) {
-                    dbUser = await db.collection("users").findOne({
-                        _id: new ObjectId(userId),
-                        tenantId: new ObjectId(tenantId)
-                    });
-                }
-                if (!dbUser) {
-                    dbUser = await db.collection("users").findOne({
-                        id: userId,
-                        tenantId: new ObjectId(tenantId)
-                    });
-                }
-
-                if (!dbUser) {
-                    return NextResponse.json({ error: "User not found in this company" }, { status: 404 });
-                }
-
-                // Update user information
-                const updateData: any = {
-                    name,
-                    email,
-                    department,
-                    updatedAt: new Date()
-                };
-
-                if (phone) {
-                    updateData.phone = phone;
-                }
-
-                // If password override is provided, hash and update it
-                if (password) {
-                    updateData.password = hashPassword(password);
-                }
-
-                if (ObjectId.isValid(userId)) {
-                    await db.collection("users").updateOne(
-                        { _id: new ObjectId(userId), tenantId: new ObjectId(tenantId) },
-                        { $set: updateData }
-                    );
-                } else {
-                    await db.collection("users").updateOne(
-                        { id: userId, tenantId: new ObjectId(tenantId) },
-                        { $set: updateData }
-                    );
-                }
-
-                return NextResponse.json({
-                    success: true,
-                    message: "User updated successfully",
-                    user: {
-                        ...updateData,
-                        id: userId
-                    }
-                });
-            }
-        } catch (dbError) {
-            console.warn("Database operation failed:", dbError);
-            return NextResponse.json(
-                { error: "Failed to update user" },
-                { status: 500 }
+        } else {
+          await db
+            .collection("users")
+            .updateOne(
+              { id: userId, tenantId: new ObjectId(tenantId) },
+              { $set: updateData }
             );
         }
 
         return NextResponse.json({
-            success: true,
-            message: "User updated successfully"
+          success: true,
+          message: "User updated successfully",
+          user: {
+            ...updateData,
+            id: userId,
+          },
         });
-    } catch (error) {
-        console.error("Error updating user:", error);
-        return NextResponse.json(
-            { error: "Failed to update user" },
-            { status: 500 }
-        );
+      }
+    } catch (dbError) {
+      console.warn("Database operation failed:", dbError);
+      return NextResponse.json(
+        { error: "Failed to update user" },
+        { status: 500 }
+      );
     }
+
+    return NextResponse.json({
+      success: true,
+      message: "User updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
-    request: NextRequest,
-    { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-    try {
-        // Authenticate admin user and get tenant info
-        const authResult = await adminAuthMiddleware(request);
-        if (authResult instanceof NextResponse) {
-            return authResult;
-        }
-
-        const { request: authenticatedRequest } = authResult;
-        const tenantId = getTenantIdFromRequest(authenticatedRequest);
-
-        if (!tenantId) {
-            return NextResponse.json(
-                { error: "Tenant information not found" },
-                { status: 400 }
-            );
-        }
-
-        const userId = params.id;
-        let userFound = false;
-        let userRole = "";
-
-        // Check if user exists in database and belongs to this tenant
-        let dbUser = null;
-        try {
-            const client = await clientPromise;
-            if (client) {
-                const db = client.db("daily-report");
-                const userIdObj = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
-
-                // Check if user exists in DB and belongs to this tenant
-                if (ObjectId.isValid(userId)) {
-                    dbUser = await db.collection("users").findOne({
-                        _id: new ObjectId(userId),
-                        tenantId: new ObjectId(tenantId)
-                    });
-                }
-                if (!dbUser) {
-                    dbUser = await db.collection("users").findOne({
-                        id: userId,
-                        tenantId: new ObjectId(tenantId)
-                    });
-                }
-
-                if (dbUser) {
-                    userFound = true;
-                    userRole = dbUser.role;
-
-                    // Prevent deletion of superadmin users
-                    if (dbUser.role === "superadmin") {
-                        return NextResponse.json({ error: "Cannot delete superadmin users" }, { status: 403 });
-                    }
-
-                    // Delete all reports by this user in this tenant
-                    await db.collection("reports").deleteMany({
-                        userId: { $in: [userIdObj, userId] },
-                        tenantId: new ObjectId(tenantId)
-                    });
-
-                    // Delete the user from database
-                    if (ObjectId.isValid(userId)) {
-                        await db.collection("users").deleteOne({
-                            _id: new ObjectId(userId),
-                            tenantId: new ObjectId(tenantId)
-                        });
-                    } else {
-                        await db.collection("users").deleteOne({
-                            id: userId,
-                            tenantId: new ObjectId(tenantId)
-                        });
-                    }
-                }
-            }
-        } catch (dbError) {
-            console.warn("Database operation failed:", dbError);
-        }
-
-        if (!userFound) {
-            return NextResponse.json({ error: "User not found in this company" }, { status: 404 });
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: "User and all reports deleted successfully"
-        });
-    } catch (error) {
-        console.error("Error deleting user:", error);
-        return NextResponse.json(
-            { error: "Failed to delete user" },
-            { status: 500 }
-        );
+  try {
+    // Authenticate admin user and get tenant info
+    const authResult = await adminAuthMiddleware(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
+
+    const { request: authenticatedRequest } = authResult;
+    const tenantId = getTenantIdFromRequest(authenticatedRequest);
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "Tenant information not found" },
+        { status: 400 }
+      );
+    }
+
+    const userId = params.id;
+    let userFound = false;
+    let userRole = "";
+
+    // Check if user exists in database and belongs to this tenant
+    let dbUser = null;
+    try {
+      const client = await clientPromise;
+      if (client) {
+        const db = client.db("daily-report");
+        const userIdObj = ObjectId.isValid(userId)
+          ? new ObjectId(userId)
+          : userId;
+
+        // Check if user exists in DB and belongs to this tenant
+        if (ObjectId.isValid(userId)) {
+          dbUser = await db.collection("users").findOne({
+            _id: new ObjectId(userId),
+            tenantId: new ObjectId(tenantId),
+          });
+        }
+        if (!dbUser) {
+          dbUser = await db.collection("users").findOne({
+            id: userId,
+            tenantId: new ObjectId(tenantId),
+          });
+        }
+
+        if (dbUser) {
+          userFound = true;
+          userRole = dbUser.role;
+
+          // Prevent deletion of superadmin users
+          if (dbUser.role === "superadmin") {
+            return NextResponse.json(
+              { error: "Cannot delete superadmin users" },
+              { status: 403 }
+            );
+          }
+
+          // Delete all reports by this user in this tenant
+          await db.collection("reports").deleteMany({
+            userId: { $in: [userIdObj, userId] },
+            tenantId: new ObjectId(tenantId),
+          });
+
+          // Delete the user from database
+          if (ObjectId.isValid(userId)) {
+            await db.collection("users").deleteOne({
+              _id: new ObjectId(userId),
+              tenantId: new ObjectId(tenantId),
+            });
+          } else {
+            await db.collection("users").deleteOne({
+              id: userId,
+              tenantId: new ObjectId(tenantId),
+            });
+          }
+        }
+      }
+    } catch (dbError) {
+      console.warn("Database operation failed:", dbError);
+    }
+
+    if (!userFound) {
+      return NextResponse.json(
+        { error: "User not found in this company" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "User and all reports deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
+      { status: 500 }
+    );
+  }
 }

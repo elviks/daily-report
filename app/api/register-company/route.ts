@@ -20,8 +20,8 @@ function slugify(text: string): string {
 
 export async function POST(request: NextRequest) {
      try {
-          // Initialize database and bootstrap default tenant only once
-          await ensureInitialization();
+          // Initialize database in background (non-blocking)
+          ensureInitialization().catch(err => console.error('Init error:', err));
 
           const { companyName, adminEmail, adminPassword } = await request.json();
 
@@ -44,10 +44,25 @@ export async function POST(request: NextRequest) {
                );
           }
 
-          if (adminPassword.length < 6) {
+          if (adminPassword.length < 8) {
                return NextResponse.json(
                     {
-                         message: "Password must be at least 6 characters long",
+                         message: \"Password must be at least 8 characters long\",
+                    },
+                    { status: 400 }
+               );
+          }
+          
+          // Password strength validation
+          const hasUpperCase = /[A-Z]/.test(adminPassword);
+          const hasLowerCase = /[a-z]/.test(adminPassword);
+          const hasNumbers = /\\d/.test(adminPassword);
+          const hasSpecialChar = /[!@#$%^&*(),.?\":{}|<>]/.test(adminPassword);
+          
+          if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+               return NextResponse.json(
+                    {
+                         message: \"Password must contain uppercase, lowercase, numbers, and special characters\",
                     },
                     { status: 400 }
                );

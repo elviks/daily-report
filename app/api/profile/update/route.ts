@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
-import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware"
-import { verifyPassword } from "@/lib/db"
+import { type NextRequest, NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
+import { authMiddleware, getTenantIdFromRequest } from "@/lib/middleware";
+import { verifyPassword } from "@/lib/db";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function PUT(request: NextRequest) {
 
     const { request: authenticatedRequest, user: authUser } = authResult;
     const tenantId = getTenantIdFromRequest(authenticatedRequest);
-    
+
     if (!tenantId) {
       return NextResponse.json(
         { error: "Tenant information not found" },
@@ -22,7 +22,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { id, name, email, phone, department, currentPassword, profileImage } = await request.json()
+    const { name, email, phone, department, currentPassword, profileImage } =
+      await request.json();
+
+    // SECURITY: Users can ONLY update their own profile
+    // User ID comes from authenticated JWT token, NOT from request body
+    const authenticatedUserId = authUser.uid;
 
     // Find user in database within the same tenant
     let user = null;
@@ -33,10 +38,12 @@ export async function PUT(request: NextRequest) {
       if (client) {
         const db = client.db("daily-report");
         const usersCol = db.collection("users");
-        const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id;
-        const filter = { 
-          $or: [{ _id: idFilter }, { id }],
-          tenantId: new ObjectId(tenantId)
+        const idFilter = ObjectId.isValid(authenticatedUserId)
+          ? new ObjectId(authenticatedUserId)
+          : authenticatedUserId;
+        const filter = {
+          $or: [{ _id: idFilter }, { id: authenticatedUserId }],
+          tenantId: new ObjectId(tenantId),
         };
 
         const dbUser = await usersCol.findOne(filter);
@@ -60,12 +67,18 @@ export async function PUT(request: NextRequest) {
     }
 
     if (!userFound || !user) {
-      return NextResponse.json({ message: "User not found in this company" }, { status: 404 })
+      return NextResponse.json(
+        { message: "User not found in this company" },
+        { status: 404 }
+      );
     }
 
     // Verify current password
     if (!verifyPassword(currentPassword, user.password)) {
-      return NextResponse.json({ message: "Current password is incorrect" }, { status: 401 })
+      return NextResponse.json(
+        { message: "Current password is incorrect" },
+        { status: 401 }
+      );
     }
 
     // Check if email is being changed and if it conflicts with another user in the same tenant
@@ -75,13 +88,18 @@ export async function PUT(request: NextRequest) {
         if (client) {
           const db = client.db("daily-report");
           const usersCol = db.collection("users");
-          const dbUserWithEmail = await usersCol.findOne({ 
-            email, 
-            _id: { $ne: new ObjectId(id) },
-            tenantId: new ObjectId(tenantId)
+          const dbUserWithEmail = await usersCol.findOne({
+            email,
+            _id: { $ne: new ObjectId(authenticatedUserId) },
+            tenantId: new ObjectId(tenantId),
           });
           if (dbUserWithEmail) {
-            return NextResponse.json({ message: "Email already in use by another user in this company" }, { status: 409 })
+            return NextResponse.json(
+              {
+                message: "Email already in use by another user in this company",
+              },
+              { status: 409 }
+            );
           }
         }
       } catch (dbError) {
@@ -89,44 +107,49 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Update user in database
+    // Update user in database - ONLY authenticated user's profile
     try {
-      const client = await clientPromise
+      const client = await clientPromise;
       if (client) {
-        const db = client.db("daily-report")
-        const usersCol = db.collection("users")
-        const idFilter = ObjectId.isValid(id) ? new ObjectId(id) : id
-        const filter = { 
-          $or: [{ _id: idFilter }, { id }],
-          tenantId: new ObjectId(tenantId)
-        }
-        await usersCol.updateOne(
-          filter,
-          {
-            $set: {
-              name,
-              email,
-              phone,
-              department,
-              profileImage: profileImage || "",
-              updatedAt: new Date(),
-            },
-          }
-        )
+        const db = client.db("daily-report");
+        const usersCol = db.collection("users");
+        const idFilter = ObjectId.isValid(authenticatedUserId)
+          ? new ObjectId(authenticatedUserId)
+          : authenticatedUserId;
+        const filter = {
+          $or: [{ _id: idFilter }, { id: authenticatedUserId }],
+          tenantId: new ObjectId(tenantId),
+        };
+        await usersCol.updateOne(filter, {
+          $set: {
+            name,
+            email,
+            phone,
+            department,
+            profileImage: profileImage || "",
+            updatedAt: new Date(),
+          },
+        });
       }
     } catch (dbError) {
-      console.error("Profile update failed:", dbError)
-      return NextResponse.json({ message: "Failed to update profile" }, { status: 500 })
+      console.error("Profile update failed:", dbError);
+      return NextResponse.json(
+        { message: "Failed to update profile" },
+        { status: 500 }
+      );
     }
 
     // Return updated user without password
-    const { password: _, ...updatedUser } = user
+    const { password: _, ...updatedUser } = user;
 
     return NextResponse.json({
       message: "Profile updated successfully",
       user: updatedUser,
-    })
+    });
   } catch (error) {
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
