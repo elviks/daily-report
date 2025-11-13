@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJWT } from "@/lib/db";
+import { verifyJWT } from "@/lib/jwt";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

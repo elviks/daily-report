@@ -2,7 +2,7 @@ import clientPromise from "./mongodb";
 import { ObjectId } from "mongodb";
 import { Tenant, User, Report, COLLECTIONS } from "./models";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import { generateJWT as generateToken, verifyJWT } from "./jwt";
 
 // Database connection helper with timeout
 export async function getDb() {
@@ -154,32 +154,11 @@ export function generateJWT(user: User): string {
     role: user.role,
   };
 
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret === "fallback-secret") {
-    throw new Error("JWT_SECRET environment variable must be set");
-  }
-
-  return jwt.sign(payload, secret, {
-    expiresIn: "24h", // Reduced from 7d for better security
-  });
+  return generateToken(payload, "24h");
 }
 
-export function verifyJWT(token: string): any {
-  try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret || secret === "fallback-secret") {
-      console.error("JWT_SECRET not properly configured");
-      return null;
-    }
-    return jwt.verify(token, secret);
-  } catch (error) {
-    console.error(
-      "JWT verification failed:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
-    return null;
-  }
-}
+// Re-export verifyJWT for backward compatibility
+export { verifyJWT };
 
 // Database initialization
 export async function initializeDatabase() {
