@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     console.log(`Successful login: ${email} from IP ${clientIP}`);
 
     // Generate JWT token
-    const token = generateJWT(user);
+    const token = await generateJWT(user);
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;

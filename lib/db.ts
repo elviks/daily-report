@@ -145,7 +145,7 @@ export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
 }
 
-export function generateJWT(user: User): string {
+export async function generateJWT(user: User): Promise<string> {
   const payload = {
     uid: user._id?.toString(),
     email: user.email,
@@ -154,7 +154,7 @@ export function generateJWT(user: User): string {
     role: user.role,
   };
 
-  return generateToken(payload, "24h");
+  return await generateToken(payload, "24h");
 }
 
 // Re-export verifyJWT for backward compatibility

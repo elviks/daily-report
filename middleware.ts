@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJWT } from "@/lib/jwt";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Set response with security headers
@@ -41,7 +41,7 @@ export function middleware(request: NextRequest) {
     }
 
     // Verify JWT and check admin role
-    const payload = verifyJWT(token);
+    const payload = await verifyJWT(token);
     if (
       !payload ||
       (!payload.isAdmin &&
@@ -69,7 +69,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    const payload = verifyJWT(token);
+    const payload = await verifyJWT(token);
     if (!payload) {
       return NextResponse.redirect(new URL("/", request.url));
     }
